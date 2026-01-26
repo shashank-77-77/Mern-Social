@@ -35,10 +35,12 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "https://mern-social-frontend.onrender.com",
+    origin: "https://mern-social-frontend-s25k.onrender.com",
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
   })
 );
+
 
 
 
