@@ -24,3 +24,4 @@ const messageSchema = new mongoose.Schema(
 messageSchema.index({ chatId: 1, createdAt: 1 });
 
 export const Message = mongoose.model("Message", messageSchema);
+// Exporting Message model for use in other parts of the application
