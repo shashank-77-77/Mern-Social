@@ -1,14 +1,8 @@
 import http from "http";
 import { Server } from "socket.io";
 
-/* =========================
-   Socket User Map
-   ========================= */
 const userSocketMap = {};
 
-/* =========================
-   Init Socket
-   ========================= */
 export const initSocket = (app) => {
   const server = http.createServer(app);
 
@@ -21,8 +15,6 @@ export const initSocket = (app) => {
   });
 
   io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
-
     const userId = socket.handshake.query.userId;
 
     if (userId && userId !== "undefined") {
@@ -32,22 +24,17 @@ export const initSocket = (app) => {
     io.emit("getOnlineUser", Object.keys(userSocketMap));
 
     socket.on("disconnect", () => {
-      console.log("User disconnected:", socket.id);
-      if (userId) delete userSocketMap[userId];
+      delete userSocketMap[userId];
       io.emit("getOnlineUser", Object.keys(userSocketMap));
     });
   });
 
-  // expose io globally
+  // 👇 attach io to app (this is the key)
   app.set("io", io);
 
   return server;
 };
 
-/* =========================
-   Helper Exports
-   ========================= */
 export const getReciverSocketId = (receiverId) => {
   return userSocketMap[receiverId];
 };
-//
