@@ -3,6 +3,7 @@ import { Message } from "../models/messages.js";
 import { getReciverSocketId, io } from "../socket/socket.js";
 import TryCatch from "../utils/Trycatch.js";
 
+// Send a message from sender to receiver
 export const sendMessage = TryCatch(async (req, res) => {
   const { receiverId, message } = req.body;
   const senderId = req.user._id;
