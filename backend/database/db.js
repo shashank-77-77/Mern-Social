@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
 
 export const connectDb = async () => {
-  if (!process.env.MONGO_URL) {
+  if (!process.env.MONGO_URI) {
     throw new Error("MONGO_URL is not defined");
   }
 
   try {
-    await mongoose.connect(process.env.MONGO_URL, {
+    await mongoose.connect(process.env.MONGO_URI, {
       dbName: process.env.DB_NAME || "mernsocial",
     });
 
