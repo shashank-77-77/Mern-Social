@@ -3,8 +3,8 @@ import { User } from "../models/userModel.js";
 
 export const isAuth = async (req, res, next) => {
   try {
-    if (!process.env.JWT_SEC) {
-      throw new Error("JWT_SEC is not defined");
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not defined");
     }
 
     const token = req.cookies?.token;
@@ -13,7 +13,7 @@ export const isAuth = async (req, res, next) => {
       return res.status(401).json({ message: "Authentication required" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SEC);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await User.findById(decoded.id).select("-password");
 
@@ -21,7 +21,7 @@ export const isAuth = async (req, res, next) => {
       return res.status(401).json({ message: "User not found" });
     }
 
-    req.user = user;
+    req.user = user; // attach user to request
     next();
   } catch (error) {
     if (
