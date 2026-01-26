@@ -8,15 +8,14 @@ import { connectDb } from "./database/db.js";
 import { Chat } from "./models/ChatModel.js";
 import { User } from "./models/userModel.js";
 import { isAuth } from "./middlewares/isAuth.js";
-import express from "express";
 import { initSocket } from "./socket/socket.js";
 
+/* =========================
+   App & Env Setup
+   ========================= */
+dotenv.config();
 const app = express();
 const server = initSocket(app);
-
-
-// Load environment variables FIRST
-dotenv.config();
 
 /* =========================
    Cloudinary Configuration
@@ -33,16 +32,29 @@ cloudinary.v2.config({
 app.use(express.json());
 app.use(cookieParser());
 
+const allowedOrigins = [
+  "https://mern-social-frontend-s25k.onrender.com",
+];
+
 app.use(
   cors({
-    origin: "https://mern-social-frontend-s25k.onrender.com",
+    origin: function (origin, callback) {
+      // allow server-to-server & Postman
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed"));
+      }
+    },
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
 
-
-
+// ✅ Explicit preflight handling (IMPORTANT)
+app.options("*", cors());
 
 /* =========================
    API Routes
@@ -87,7 +99,7 @@ app.get("/api/user/all", isAuth, async (req, res) => {
 });
 
 /* =========================
-   Modular Route Imports
+   Modular Routes
    ========================= */
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -112,6 +124,6 @@ app.get("/health", (req, res) => {
 const port = process.env.PORT || 5000;
 
 server.listen(port, async () => {
-  console.log(`🚀 Backend service running on port ${port}`);
   await connectDb();
+  console.log(`🚀 Backend service running on port ${port}`);
 });
