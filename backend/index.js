@@ -35,13 +35,11 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://mernsocial-5r6r.onrender.com"
-    ],
+    origin: "https://mern-social-frontend.onrender.com",
     credentials: true,
   })
 );
+
 
 
 /* =========================
