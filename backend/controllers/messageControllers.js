@@ -1,4 +1,4 @@
-import { Chat } from "../models/chatModel.js";
+import { Chat } from "../models/ChatModel.js";
 import { Message } from "../models/messages.js";
 import { getReciverSocketId, io } from "../socket/socket.js";
 import TryCatch from "../utils/Trycatch.js";
