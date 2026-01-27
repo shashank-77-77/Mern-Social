@@ -1,9 +1,17 @@
+// 🚨 MUST BE FIRST — ENV BOOTSTRAP (ESM SAFE)
+import "dotenv/config";
+
+/* =========================
+   Core Imports
+   ========================= */
 import express from "express";
-import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import cloudinary from "cloudinary";
 
+/* =========================
+   Internal Modules
+   ========================= */
 import { connectDb } from "./database/db.js";
 import { Chat } from "./models/ChatModel.js";
 import { User } from "./models/userModel.js";
@@ -11,9 +19,8 @@ import { isAuth } from "./middlewares/isAuth.js";
 import { initSocket } from "./socket/socket.js";
 
 /* =========================
-   App & Env Setup
+   App Initialization
    ========================= */
-dotenv.config();
 const app = express();
 const server = initSocket(app);
 
@@ -33,34 +40,35 @@ app.use(express.json());
 app.use(cookieParser());
 
 const allowedOrigins = [
+  "http://localhost:5173",
   "https://mern-social-frontend-s25k.onrender.com",
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // allow server-to-server & Postman
+    origin: (origin, callback) => {
+      // Allow server-to-server & tools like Postman
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS not allowed"));
+        return callback(null, true);
       }
+
+      return callback(new Error("CORS not allowed"));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
 
-// ✅ Explicit preflight handling (IMPORTANT)
+// Explicit preflight support
 app.options("*", cors());
 
 /* =========================
-   API Routes
+   Core API Routes
    ========================= */
 
-// Get all chats for logged-in user
+// Fetch chats for logged-in user
 app.get("/api/messages/chats", isAuth, async (req, res) => {
   try {
     const chats = await Chat.find({
@@ -82,7 +90,7 @@ app.get("/api/messages/chats", isAuth, async (req, res) => {
   }
 });
 
-// Get all users (searchable)
+// Fetch all users (search enabled)
 app.get("/api/user/all", isAuth, async (req, res) => {
   try {
     const search = req.query.search || "";
@@ -99,7 +107,7 @@ app.get("/api/user/all", isAuth, async (req, res) => {
 });
 
 /* =========================
-   Modular Routes
+   Modular Route Binding
    ========================= */
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -121,9 +129,9 @@ app.get("/health", (req, res) => {
 /* =========================
    Server Bootstrap
    ========================= */
-const port = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000;
 
-server.listen(port, async () => {
+server.listen(PORT, async () => {
   await connectDb();
-  console.log(`🚀 Backend service running on port ${port}`);
+  console.log(`🚀 Backend service running on port ${PORT}`);
 });
