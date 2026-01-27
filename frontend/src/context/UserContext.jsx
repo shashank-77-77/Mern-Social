@@ -2,15 +2,22 @@ import axios from "axios";
 import { createContext, useContext, useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
+/* =========================
+   Context Initialization
+   ========================= */
 const UserContext = createContext();
 
-/* ---------- Axios Instance ---------- */
+/* =========================
+   Axios Instance (GLOBAL)
+   ========================= */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL, // 🔴 NO /api here
   withCredentials: true,
 });
 
-/* ---------- Provider ---------- */
+/* =========================
+   Provider
+   ========================= */
 export const UserContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuth, setIsAuth] = useState(false);
@@ -93,7 +100,7 @@ export const UserContextProvider = ({ children }) => {
     }
   };
 
-  /* ---------- Update Profile ---------- */
+  /* ---------- Update Profile Picture ---------- */
   const updateProfilePic = async (id, formdata, setFile) => {
     try {
       const { data } = await api.put(`/api/user/${id}`, formdata);
@@ -105,6 +112,7 @@ export const UserContextProvider = ({ children }) => {
     }
   };
 
+  /* ---------- Update Profile Name ---------- */
   const updateProfileName = async (id, name, setShowInput) => {
     try {
       const { data } = await api.put(`/api/user/${id}`, { name });
@@ -116,7 +124,7 @@ export const UserContextProvider = ({ children }) => {
     }
   };
 
-  /* ---------- Init ---------- */
+  /* ---------- Init (Session Restore) ---------- */
   useEffect(() => {
     fetchUser();
   }, []);
@@ -142,5 +150,7 @@ export const UserContextProvider = ({ children }) => {
   );
 };
 
-/* ---------- Hook ---------- */
+/* =========================
+   Hook Export
+   ========================= */
 export const UserData = () => useContext(UserContext);
