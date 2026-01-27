@@ -13,9 +13,17 @@ const Login = () => {
   const { loginUser, loading } = UserData();
   const { fetchPosts } = PostData();
 
-  const submitHandler = (e) => {
-    e.preventDefault();
-    loginUser(email, password, navigate, fetchPosts);
+  // ✅ async + guarded submit
+  const submitHandler = async (e) => {
+    e.preventDefault(); // 🔴 critical — stops GET navigation
+
+    if (loading) return; // prevents double submit
+
+    try {
+      await loginUser(email, password, navigate, fetchPosts);
+    } catch (err) {
+      console.error("Login failed:", err);
+    }
   };
 
   if (loading) return <Loading />;
@@ -31,7 +39,8 @@ const Login = () => {
             </h1>
           </div>
 
-          <form onSubmit={submitHandler}>
+          {/* ✅ no action attribute → no browser submit */}
+          <form onSubmit={submitHandler} noValidate>
             <div className="flex flex-col items-center space-y-6">
               <input
                 type="email"
@@ -53,8 +62,12 @@ const Login = () => {
             </div>
 
             <div className="text-center mt-7">
-              <button type="submit" className="auth-btn">
-                Login
+              <button
+                type="submit"
+                className="auth-btn"
+                disabled={loading}
+              >
+                {loading ? "Logging in..." : "Login"}
               </button>
             </div>
           </form>
