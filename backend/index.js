@@ -39,30 +39,31 @@ cloudinary.v2.config({
 app.use(express.json());
 app.use(cookieParser());
 
+/* =========================
+   CORS CONFIG — FIXED
+   ========================= */
 const allowedOrigins = [
   "http://localhost:5173",
   "https://mern-social-frontend-s25k.onrender.com",
 ];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow server-to-server & tools like Postman
-      if (!origin) return callback(null, true);
+const corsOptions = {
+  origin: (origin, callback) => {
+    // allow server-to-server, Postman, curl
+    if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, origin); // ✅ MUST return origin string
+    }
 
-      return callback(new Error("CORS not allowed"));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  })
-);
+    return callback(new Error("CORS not allowed"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+};
 
-// Explicit preflight support
-app.options("*", cors());
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // ✅ preflight uses SAME config
 
 /* =========================
    Core API Routes
