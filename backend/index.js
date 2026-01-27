@@ -51,16 +51,19 @@ const corsOptions = {
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
-      return callback(null, origin); // MUST echo origin
+      return callback(null, origin); // echo origin
     }
 
     return callback(new Error("CORS not allowed"));
   },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.options("*", cors(corsOptions)); // CRITICAL for preflight
+
 
 
 /* =========================
