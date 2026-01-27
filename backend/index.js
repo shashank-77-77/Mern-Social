@@ -43,27 +43,25 @@ app.use(cookieParser());
    CORS CONFIG — FIXED
    ========================= */
 const allowedOrigins = [
-  "http://localhost:5173",
   "https://mern-social-frontend-s25k.onrender.com",
 ];
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // allow server-to-server, Postman, curl
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
-      return callback(null, origin); // ✅ MUST return origin string
+      return callback(null, origin); // MUST echo origin
     }
 
     return callback(new Error("CORS not allowed"));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // ✅ preflight uses SAME config
+app.options("*", cors(corsOptions));
+
 
 /* =========================
    Core API Routes
