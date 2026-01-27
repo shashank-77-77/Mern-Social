@@ -1,79 +1,82 @@
-import axios from "axios";
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { LoadingAnimation } from "../components/Loading";
+import { useState, useEffect } from "react";
+import api from "../utils/axios";
+import { UserData } from "../context/UserContext";
+import toast from "react-hot-toast";
 
 const Search = () => {
-  const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchUsers = async () => {
-    if (!search.trim()) {
-      setUsers([]);
+  const { isAuth, loading: authLoading } = UserData();
+
+  const searchUsers = async () => {
+    if (authLoading) return;
+
+    if (!isAuth) {
+      toast.error("Please login to search users");
       return;
     }
 
     setLoading(true);
     try {
-      const { data } = await axios.get(
-        "/api/user/all?search=" + search
+      const { data } = await api.get(
+        `/user/all?search=${search}`
       );
       setUsers(data);
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      toast.error("Search failed");
+      setUsers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="bg-gray-100 min-h-screen">
-      <div className="flex flex-col items-center pt-5">
-        {/* Search Bar */}
-        <div className="flex gap-4 items-center">
-          <input
-            type="text"
-            className="custom-input"
-            placeholder="Search by name"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <button
-            onClick={fetchUsers}
-            className="px-3 py-2 bg-blue-500 text-white rounded-md"
-          >
-            Search
-          </button>
-        </div>
+  // 🔴 optional: auto-search when typing
+  useEffect(() => {
+    if (search.trim() && isAuth && !authLoading) {
+      searchUsers();
+    }
+  }, [search, isAuth, authLoading]);
 
-        {/* Results */}
-        <div className="mt-4 w-full flex flex-col items-center">
-          {loading ? (
-            <LoadingAnimation />
-          ) : users.length > 0 ? (
-            users.map((user) => (
-              <Link
-                key={user._id}
-                to={`/user/${user._id}`}
-                className="mt-3 px-4 py-2 bg-gray-300 rounded-md flex items-center gap-3 w-[250px]"
-              >
-                <img
-                  src={user.profilePic?.url}
-                  alt={user.name}
-                  className="w-8 h-8 rounded-full"
-                />
-                <span>{user.name}</span>
-              </Link>
-            ))
-          ) : (
-            search && (
-              <p className="text-gray-500 mt-4">
-                No users found
-              </p>
-            )
-          )}
-        </div>
+  return (
+    <div className="flex flex-col items-center gap-4 mt-6">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Enter Name"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="border px-3 py-1 rounded"
+        />
+        <button
+          onClick={searchUsers}
+          disabled={loading || authLoading || !isAuth}
+          className="bg-blue-500 text-white px-4 py-1 rounded disabled:opacity-50"
+        >
+          Search
+        </button>
+      </div>
+
+      {!loading && users.length === 0 && search && (
+        <p>No User please Search</p>
+      )}
+
+      <div className="w-full max-w-md">
+        {users.map((user) => (
+          <div
+            key={user._id}
+            className="flex items-center gap-3 p-2 border-b"
+          >
+            <img
+              src={user.profilePic?.url}
+              alt=""
+              className="w-10 h-10 rounded-full"
+            />
+            <p>{user.name}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

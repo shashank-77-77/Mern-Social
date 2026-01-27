@@ -13,20 +13,19 @@ export const registerUser = TryCatch(async (req, res) => {
     return res.status(400).json({ message: "Please give all values" });
   }
 
-  const normalizedEmail = email.toLowerCase();
-
-  let user = await User.findOne({ email: normalizedEmail });
+  let user = await User.findOne({ email });
   if (user) {
-    return res.status(400).json({ message: "User already exists" });
+    return res.status(400).json({ message: "User Already Exist" });
   }
 
   const fileUrl = getDataUrl(file);
+  const hashPassword = await bcrypt.hash(password, 10);
   const myCloud = await cloudinary.v2.uploader.upload(fileUrl.content);
 
   user = await User.create({
     name,
-    email: normalizedEmail,
-    password, // model hashes it
+    email,
+    password: hashPassword,
     gender,
     profilePic: {
       id: myCloud.public_id,
@@ -37,7 +36,7 @@ export const registerUser = TryCatch(async (req, res) => {
   generateToken(user._id, res);
 
   res.status(201).json({
-    message: "User registered",
+    message: "User Registered",
     user,
   });
 });
@@ -45,22 +44,20 @@ export const registerUser = TryCatch(async (req, res) => {
 export const loginUser = TryCatch(async (req, res) => {
   const { email, password } = req.body;
 
-  const normalizedEmail = email.toLowerCase();
-
-  const user = await User.findOne({ email: normalizedEmail }).select("+password");
+  const user = await User.findOne({ email });
   if (!user) {
-    return res.status(400).json({ message: "Invalid credentials" });
+    return res.status(400).json({ message: "Invalid Credentials" });
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    return res.status(400).json({ message: "Invalid credentials" });
+    return res.status(400).json({ message: "Invalid Credentials" });
   }
 
   generateToken(user._id, res);
 
   res.json({
-    message: "User logged in",
+    message: "User Logged in",
     user,
   });
 });
@@ -68,9 +65,10 @@ export const loginUser = TryCatch(async (req, res) => {
 export const logoutUser = TryCatch((req, res) => {
   res.cookie("token", "", {
     httpOnly: true,
-    sameSite: "lax",
-    maxAge: 0,
+    expires: new Date(0),
   });
 
-  res.json({ message: "Logged out successfully" });
+  res.json({
+    message: "Logged out successfully",
+  });
 });

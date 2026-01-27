@@ -1,58 +1,59 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { UserData } from "./UserContext";
 
-const SocketContext = createContext();
+/**
+ * Resolve backend URL from environment
+ * - development → http://localhost:5000
+ * - production  → Render URL
+ */
+const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+const SocketContext = createContext(null);
 
 export const SocketContextProvider = ({ children }) => {
-  const { user, isAuth } = UserData();
-  const socketRef = useRef(null);
-
+  const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
 
+  const { user } = UserData();
+
   useEffect(() => {
-    // ❗ Do not connect until user is authenticated
-    if (!isAuth || !user?._id) return;
+    // Do not initialize socket until user state is resolved
+    if (!user?._id) {
+      return;
+    }
 
-    // Prevent duplicate connections (StrictMode safe)
-    if (socketRef.current) return;
-
-    const socket = io(import.meta.env.VITE_SOCKET_URL, {
+    const socketInstance = io(BACKEND_URL, {
       withCredentials: true,
+      transports: ["websocket", "polling"],
       query: {
         userId: user._id,
       },
     });
 
-    socketRef.current = socket;
+    setSocket(socketInstance);
 
-    socket.on("connect", () => {
-      console.log("Socket connected:", socket.id);
+    socketInstance.on("connect", () => {
+      console.log("Socket connected:", socketInstance.id);
     });
 
-    socket.on("getOnlineUser", (users) => {
+    socketInstance.on("getOnlineUser", (users) => {
       setOnlineUsers(users);
     });
 
-    socket.on("disconnect", () => {
+    socketInstance.on("disconnect", () => {
       console.log("Socket disconnected");
-      setOnlineUsers([]);
     });
 
     return () => {
-      socket.off("getOnlineUser");
-      socket.disconnect();
-      socketRef.current = null;
+      socketInstance.close();
+      setSocket(null);
     };
-  }, [isAuth, user?._id]);
+  }, [user?._id]);
 
   return (
-    <SocketContext.Provider
-      value={{
-        socket: socketRef.current,
-        onlineUsers,
-      }}
-    >
+    <SocketContext.Provider value={{ socket, onlineUsers }}>
       {children}
     </SocketContext.Provider>
   );

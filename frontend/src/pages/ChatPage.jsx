@@ -1,123 +1,117 @@
 import React, { useEffect, useState } from "react";
 import { ChatData } from "../context/ChatContext";
-import { SocketData } from "../context/SocketContext";
 import axios from "axios";
 import { FaSearch } from "react-icons/fa";
 import Chat from "../components/chat/Chat";
 import MessageContainer from "../components/chat/MessageContainer";
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true,
-});
+import { SocketData } from "../context/SocketContext";
 
 const ChatPage = ({ user }) => {
-  const { chats, selectedChat, setSelectedChat, fetchChats, sendMessage } =
+  const { createChat, selectedChat, setSelectedChat, chats, setChats } =
     ChatData();
-
-  const { onlineUsers } = SocketData();
 
   const [users, setUsers] = useState([]);
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState(false);
 
-  /* ---------- Search Users ---------- */
-  const fetchAllUsers = async () => {
+  async function fetchAllUsers() {
     try {
-      const { data } = await api.get(`/api/user/all?search=${query}`);
+      const { data } = await axios.get("/api/user/all?search=" + query);
+
       setUsers(data);
     } catch (error) {
-      console.error(error);
+      console.log(error);
+    }
+  }
+
+  const getAllChats = async () => {
+    try {
+      const { data } = await axios.get("/api/messages/chats");
+      setChats(data);
+    } catch (error) {
+      console.log(error);
     }
   };
 
   useEffect(() => {
-    if (search) fetchAllUsers();
-  }, [query, search]);
+    fetchAllUsers();
+  }, [query]);
 
-  /* ---------- Init Chats ---------- */
   useEffect(() => {
-    fetchChats();
+    getAllChats();
   }, []);
 
-  /* ---------- Start New Chat ---------- */
-  const startChat = async (receiverId) => {
-    await sendMessage(receiverId, "👋");
+  async function createNewChat(id) {
+    await createChat(id);
     setSearch(false);
-    fetchChats();
-  };
+    getAllChats();
+  }
 
-  /* ---------- Helper ---------- */
-  const isUserOnline = (chat) => {
-    const otherUser = chat.users.find((u) => u._id !== user._id);
-    return otherUser && onlineUsers.includes(otherUser._id);
-  };
-
+  const { onlineUsers, socket } = SocketData();
   return (
-    <div className="w-full md:w-[750px] md:p-4">
+    <div className="w-[100%] md:w-[750px] md:p-4">
       <div className="flex gap-4 mx-auto">
-        {/* Sidebar */}
         <div className="w-[30%]">
-          <button
-            className="bg-blue-500 text-white px-3 py-1 rounded-full"
-            onClick={() => setSearch((prev) => !prev)}
-          >
-            {search ? "X" : <FaSearch />}
-          </button>
-
-          {search ? (
-            <>
-              <input
-                type="text"
-                className="custom-input mt-2"
-                placeholder="Search users"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-
-              <div className="users">
-                {users.length ? (
-                  users.map((u) => (
-                    <div
-                      key={u._id}
-                      onClick={() => startChat(u._id)}
-                      className="bg-gray-500 text-white p-2 mt-2 cursor-pointer flex items-center gap-2"
-                    >
-                      <img
-                        src={u.profilePic?.url}
-                        className="w-8 h-8 rounded-full"
-                        alt=""
-                      />
-                      {u.name}
-                    </div>
-                  ))
-                ) : (
-                  <p className="mt-2 text-sm">No users found</p>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-col mt-2">
-              {chats.map((chat) => (
-                <Chat
-                  key={chat._id}
-                  chat={chat}
-                  setSelectedChat={setSelectedChat}
-                  isOnline={isUserOnline(chat)}
+          <div className="top">
+            <button
+              className="bg-blue-500 text-white px-3 py-1 rounded-full"
+              onClick={() => setSearch(!search)}
+            >
+              {search ? "X" : <FaSearch />}
+            </button>
+            {search ? (
+              <>
+                <input
+                  type="text"
+                  className="custom-input"
+                  style={{ width: "100px", border: "gray solid 1px" }}
+                  placeholder="Enter name"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
                 />
-              ))}
-            </div>
-          )}
-        </div>
 
-        {/* Chat Window */}
-        {selectedChat ? (
-          <div className="w-[70%]">
-            <MessageContainer selectedChat={selectedChat} />
+                <div className="users">
+                  {users && users.length > 0 ? (
+                    users.map((e) => (
+                      <div
+                        key={e._id}
+                        onClick={() => createNewChat(e._id)}
+                        className="bg-gray-500 text-white p-2 mt-2 cursor-pointer flex justify-center items-center gap-2"
+                      >
+                        <img
+                          src={e.profilePic.url}
+                          className="w-8 h-8 rounded-full"
+                          alt=""
+                        />
+                        {e.name}
+                      </div>
+                    ))
+                  ) : (
+                    <p>No Users</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col justify-center items-center mt-2">
+                {chats.map((e) => (
+                  <Chat
+                    key={e._id}
+                    chat={e}
+                    setSelectedChat={setSelectedChat}
+                    isOnline={onlineUsers.includes(e.users[0]._id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        {selectedChat === null ? (
+          <div className="w-[70%] mx-20 mt-40 text-2xl">
+            Hello 👋 {user.name} select a chat to start conversation
           </div>
         ) : (
-          <div className="w-[70%] mx-20 mt-40 text-xl">
-            Hello 👋 {user.name}, select a chat to start chatting
+          <div className="w-[70%]">
+            <MessageContainer selectedChat={selectedChat} setChats={setChats} />
           </div>
         )}
       </div>

@@ -1,7 +1,7 @@
 import express from "express";
 import { isAuth } from "../middlewares/isAuth.js";
 import {
-  commentOnPost,
+  commentonPost,
   deleteComment,
   deletePost,
   editCaption,
@@ -13,15 +13,16 @@ import uploadFile from "../middlewares/multer.js";
 
 const router = express.Router();
 
-router.get("/all", isAuth, getAllPosts);
 router.post("/new", isAuth, uploadFile, newPost);
 
 router.put("/:id", isAuth, editCaption);
 router.delete("/:id", isAuth, deletePost);
 
+router.get("/all", isAuth, getAllPosts);
+
 router.post("/like/:id", isAuth, likeUnlikePost);
 
-router.post("/comment/:id", isAuth, commentOnPost);
+router.post("/comment/:id", isAuth, commentonPost);
 router.delete("/comment/:id", isAuth, deleteComment);
 
 export default router;

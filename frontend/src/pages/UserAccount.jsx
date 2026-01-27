@@ -1,195 +1,242 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { PostData } from "../context/PostContext";
 import PostCard from "../components/PostCard";
 import { FaArrowDownLong, FaArrowUp } from "react-icons/fa6";
+import axios from "axios";
 import { Loading } from "../components/Loading";
 import { UserData } from "../context/UserContext";
 import Modal from "../components/Modal";
 import { SocketData } from "../context/SocketContext";
-import axios from "axios";
-import toast from "react-hot-toast";
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true,
-});
 
 const UserAccount = ({ user: loggedInUser }) => {
-  const { id } = useParams();
-  const { posts, reels } = PostData();
-  const { followUser } = UserData();
-  const { onlineUsers } = SocketData();
+  const navigate = useNavigate();
 
-  const [user, setUser] = useState(null);
+  const { posts, reels } = PostData();
+
+  const [user, setUser] = useState([]);
+
+  const params = useParams();
+
   const [loading, setLoading] = useState(true);
 
-  /* ---------- Fetch Profile ---------- */
+  async function fetchUser() {
+    try {
+      const { data } = await axios.get("/api/user/" + params.id);
+
+      setUser(data);
+      setLoading(false);
+    } catch (error) {
+      console.log(error);
+      setLoading(false);
+    }
+  }
+
+  console.log(user);
+
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data } = await api.get(`/api/user/${id}`);
-        setUser(data);
-      } catch {
-        toast.error("Failed to load user");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchUser();
-  }, [id]);
+  }, [params.id]);
 
-  if (loading) return <Loading />;
-  if (!user) return null;
+  let myPosts;
 
-  /* ---------- My Content ---------- */
-  const myPosts = posts.filter(
-    (p) => p.owner._id.toString() === user._id
-  );
-  const myReels = reels.filter(
-    (r) => r.owner._id.toString() === user._id
-  );
+  if (posts) {
+    myPosts = posts.filter((post) => post.owner._id === user._id);
+  }
+  let myReels;
 
-  /* ---------- Follow State ---------- */
-  const isFollowing = user.followers.some(
-    (f) => f.toString() === loggedInUser._id
-  );
-
-  const followHandler = async () => {
-    await followUser(user._id, refreshUser);
-  };
-
-  const refreshUser = async () => {
-    const { data } = await api.get(`/api/user/${id}`);
-    setUser(data);
-  };
-
-  /* ---------- Followers / Following ---------- */
-  const [followersData, setFollowersData] = useState([]);
-  const [followingsData, setFollowingsData] = useState([]);
-  const [showFollowers, setShowFollowers] = useState(false);
-  const [showFollowings, setShowFollowings] = useState(false);
-
-  useEffect(() => {
-    const fetchFollowData = async () => {
-      try {
-        const { data } = await api.get(
-          `/api/user/followdata/${user._id}`
-        );
-        setFollowersData(data.followers);
-        setFollowingsData(data.followings);
-      } catch {
-        toast.error("Failed to load follow data");
-      }
-    };
-    fetchFollowData();
-  }, [user._id]);
-
-  /* ---------- Reels Navigation ---------- */
-  const [index, setIndex] = useState(0);
-  const prevReel = () => index > 0 && setIndex(index - 1);
-  const nextReel = () =>
-    index < myReels.length - 1 && setIndex(index + 1);
+  if (reels) {
+    myReels = reels.filter((reel) => reel.owner._id === user._id);
+  }
 
   const [type, setType] = useState("post");
 
+  const [index, setIndex] = useState(0);
+
+  const prevReel = () => {
+    if (index === 0) {
+      console.log("null");
+      return null;
+    }
+    setIndex(index - 1);
+  };
+  const nextReel = () => {
+    if (index === myReels.length - 1) {
+      console.log("null");
+      return null;
+    }
+    setIndex(index + 1);
+  };
+
+  const [followed, setFollowed] = useState(false);
+
+  const { followUser } = UserData();
+
+  const followHandler = () => {
+    setFollowed(!followed);
+    followUser(user._id, fetchUser);
+  };
+
+  const followers = user.followers;
+
+  useEffect(() => {
+    if (followers && followers.includes(loggedInUser._id)) setFollowed(true);
+  }, [user]);
+
+  const [show, setShow] = useState(false);
+  const [show1, setShow1] = useState(false);
+
+  const [followersData, setFollowersData] = useState([]);
+  const [followingsData, setFollowingsData] = useState([]);
+
+  async function followData() {
+    try {
+      const { data } = await axios.get("/api/user/followdata/" + user._id);
+
+      setFollowersData(data.followers);
+      setFollowingsData(data.followings);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    followData();
+  }, [user]);
+
+  const { onlineUsers } = SocketData();
   return (
-    <div className="bg-gray-100 min-h-screen flex flex-col gap-4 items-center pt-3 pb-14">
-      {showFollowers && (
-        <Modal
-          value={followersData}
-          title="Followers"
-          setShow={setShowFollowers}
-        />
-      )}
-      {showFollowings && (
-        <Modal
-          value={followingsData}
-          title="Followings"
-          setShow={setShowFollowings}
-        />
-      )}
+    <>
+      {loading ? (
+        <Loading />
+      ) : (
+        <>
+          {user && (
+            <>
+              <div className="bg-gray-100 min-h-screen flex flex-col gap-4 items-center justify-center pt-3 pb-14">
+                {show && (
+                  <Modal
+                    value={followersData}
+                    title={"Followers"}
+                    setShow={setShow}
+                  />
+                )}
+                {show1 && (
+                  <Modal
+                    value={followingsData}
+                    title={"Followings"}
+                    setShow={setShow1}
+                  />
+                )}
+                <div className="bg-white flex justify-between gap-4 p-8 rounded-lg shadow-md max-w-md">
+                  <div className="image flex flex-col justify-between mb-4 gap-4">
+                    <img
+                      src={user.profilePic.url}
+                      alt=""
+                      className="w-[180px] h-[180px] rounded-full"
+                    />
+                  </div>
 
-      {/* Profile Card */}
-      <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full flex gap-4">
-        <img
-          src={user.profilePic?.url}
-          alt=""
-          className="w-[180px] h-[180px] rounded-full"
-        />
+                  <div className="flex flex-col gap-2">
+                    <p className="flex justify-center items-center text-gray-800 font-semibold">
+                      {user.name}{" "}
+                      {onlineUsers.includes(user._id) && (
+                        <div className="ml-5 ">
+                          <span className="font-bold text-green-400">
+                            Online
+                          </span>
+                        </div>
+                      )}
+                    </p>
+                    <p className="text-gray-500 text-sm">{user.email}</p>
+                    <p className="text-gray-500 text-sm">{user.gender}</p>
+                    <p
+                      className="text-gray-500 text-sm cursor-pointer"
+                      onClick={() => setShow(true)}
+                    >
+                      {user.followers.length} follower
+                    </p>
+                    <p
+                      className="text-gray-500 text-sm cursor-pointer"
+                      onClick={() => setShow1(true)}
+                    >
+                      {user.followings.length} following
+                    </p>
 
-        <div className="flex flex-col gap-2">
-          <p className="font-semibold flex items-center gap-2">
-            {user.name}
-            {onlineUsers.includes(user._id) && (
-              <span className="text-green-500 text-sm">
-                Online
-              </span>
-            )}
-          </p>
-          <p>{user.email}</p>
-          <p>{user.gender}</p>
+                    {user._id === loggedInUser._id ? (
+                      ""
+                    ) : (
+                      <button
+                        onClick={followHandler}
+                        className={`py-2 px-5 text-white rounded-md ${
+                          followed ? "bg-red-500" : "bg-blue-400"
+                        }`}
+                      >
+                        {followed ? "UnFollow" : "Follow"}
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-          <p onClick={() => setShowFollowers(true)}>
-            {user.followers.length} followers
-          </p>
-          <p onClick={() => setShowFollowings(true)}>
-            {user.followings.length} following
-          </p>
+                <div className="controls flex justify-center items-center bg-white p-4 rounded-md gap-7">
+                  <button onClick={() => setType("post")}>Posts</button>
+                  <button onClick={() => setType("reel")}>Reels</button>
+                </div>
 
-          {user._id !== loggedInUser._id && (
-            <button
-              onClick={followHandler}
-              className={`py-2 px-5 text-white rounded-md ${
-                isFollowing ? "bg-red-500" : "bg-blue-400"
-              }`}
-            >
-              {isFollowing ? "Unfollow" : "Follow"}
-            </button>
+                {type === "post" && (
+                  <>
+                    {myPosts && myPosts.length > 0 ? (
+                      myPosts.map((e) => (
+                        <PostCard type={"post"} value={e} key={e._id} />
+                      ))
+                    ) : (
+                      <p>No Post Yet</p>
+                    )}
+                  </>
+                )}
+                {type === "reel" && (
+                  <>
+                    {myReels && myReels.length > 0 ? (
+                      <div className="flex gap-3 justify-center items-center">
+                        <PostCard
+                          type={"reel"}
+                          value={myReels[index]}
+                          key={myReels[index]._id}
+                        />
+                        <div className="button flex flex-col justify-center items-center gap-6">
+                          {index === 0 ? (
+                            ""
+                          ) : (
+                            <button
+                              className="bg-gray-500 text-white py-5 px-5 rounded-full"
+                              onClick={prevReel}
+                            >
+                              <FaArrowUp />
+                            </button>
+                          )}
+                          {index === myReels.length - 1 ? (
+                            ""
+                          ) : (
+                            <button
+                              className="bg-gray-500 text-white py-5 px-5 rounded-full"
+                              onClick={nextReel}
+                            >
+                              <FaArrowDownLong />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <p>No Reels Yet</p>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
           )}
-        </div>
-      </div>
-
-      {/* Toggle */}
-      <div className="bg-white p-4 rounded-md flex gap-6">
-        <button onClick={() => setType("post")}>Posts</button>
-        <button onClick={() => setType("reel")}>Reels</button>
-      </div>
-
-      {/* Content */}
-      {type === "post" &&
-        (myPosts.length ? (
-          myPosts.map((p) => (
-            <PostCard key={p._id} value={p} type="post" />
-          ))
-        ) : (
-          <p>No posts yet</p>
-        ))}
-
-      {type === "reel" &&
-        (myReels.length ? (
-          <div className="flex gap-4 items-center">
-            <PostCard
-              value={myReels[index]}
-              type="reel"
-            />
-            <div className="flex flex-col gap-4">
-              {index > 0 && (
-                <button onClick={prevReel}>
-                  <FaArrowUp />
-                </button>
-              )}
-              {index < myReels.length - 1 && (
-                <button onClick={nextReel}>
-                  <FaArrowDownLong />
-                </button>
-              )}
-            </div>
-          </div>
-        ) : (
-          <p>No reels yet</p>
-        ))}
-    </div>
+        </>
+      )}
+    </>
   );
 };
 

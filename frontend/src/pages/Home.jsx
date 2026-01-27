@@ -6,23 +6,21 @@ import { Loading } from "../components/Loading";
 
 const Home = () => {
   const { posts, loading } = PostData();
-
-  if (loading) return <Loading />;
-
   return (
-    <div>
-      <AddPost type="post" />
-
-      {posts.length > 0 ? (
-        posts.map((post) => (
-          <PostCard key={post._id} value={post} type="post" />
-        ))
+    <>
+      {loading ? (
+        <Loading />
       ) : (
-        <p className="text-center mt-4 text-gray-500">
-          No posts yet. Be the first to post!
-        </p>
+        <div>
+          <AddPost type="post" />
+          {posts && posts.length > 0 ? (
+            posts.map((e) => <PostCard value={e} key={e._id} type={"post"} />)
+          ) : (
+            <p>No Post Yet</p>
+          )}
+        </div>
       )}
-    </div>
+    </>
   );
 };
 

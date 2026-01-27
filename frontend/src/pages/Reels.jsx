@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import AddPost from "../components/AddPost";
 import { PostData } from "../context/PostContext";
 import PostCard from "../components/PostCard";
@@ -9,40 +9,41 @@ const Reels = () => {
   const { reels, loading } = PostData();
   const [index, setIndex] = useState(0);
 
-  /* ---------- Keep index in bounds ---------- */
-  useEffect(() => {
-    if (reels.length === 0) {
-      setIndex(0);
-    } else if (index > reels.length - 1) {
-      setIndex(reels.length - 1);
-    }
-  }, [reels, index]);
-
   const prevReel = () => {
-    setIndex((prev) => Math.max(prev - 1, 0));
+    if (index === 0) {
+      console.log("null");
+      return null;
+    }
+    setIndex(index - 1);
   };
-
   const nextReel = () => {
-    setIndex((prev) => Math.min(prev + 1, reels.length - 1));
+    if (index === reels.length - 1) {
+      console.log("null");
+      return null;
+    }
+    setIndex(index + 1);
   };
-
-  if (loading) return <Loading />;
-
   return (
-    <div className="bg-gray-100">
-      <AddPost type="reel" />
-
-      <div className="flex m-auto gap-3 w-[300px] md:w-[500px] justify-center">
-        {reels.length > 0 ? (
-          <>
-            <PostCard
-              key={reels[index]._id}
-              value={reels[index]}
-              type="reel"
-            />
-
-            <div className="flex flex-col justify-center items-center gap-6">
-              {index > 0 && (
+    <>
+      {loading ? (
+        <Loading />
+      ) : (
+        <div className="bg-gray-100">
+          <AddPost type="reel" />
+          <div className="flex m-auto gap-3 w-[300px] md:w-[500px]">
+            {reels && reels.length > 0 ? (
+              <PostCard
+                key={reels[index]._id}
+                value={reels[index]}
+                type={"reel"}
+              />
+            ) : (
+              <p>No reels yet</p>
+            )}
+            <div className="button flex flex-col justify-center items-center gap-6">
+              {index === 0 ? (
+                ""
+              ) : (
                 <button
                   className="bg-gray-500 text-white py-5 px-5 rounded-full"
                   onClick={prevReel}
@@ -50,8 +51,9 @@ const Reels = () => {
                   <FaArrowUp />
                 </button>
               )}
-
-              {index < reels.length - 1 && (
+              {index === reels.length - 1 ? (
+                ""
+              ) : (
                 <button
                   className="bg-gray-500 text-white py-5 px-5 rounded-full"
                   onClick={nextReel}
@@ -60,14 +62,10 @@ const Reels = () => {
                 </button>
               )}
             </div>
-          </>
-        ) : (
-          <p className="text-center text-gray-500 mt-4">
-            No reels yet. Be the first to post one.
-          </p>
-        )}
-      </div>
-    </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

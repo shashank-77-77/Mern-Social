@@ -1,115 +1,139 @@
-import axios from "axios";
 import { createContext, useContext, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import api from "../utils/axios";
+import { UserData } from "./UserContext";
 
 const PostContext = createContext();
 
-/* ---------- Axios Instance ---------- */
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true,
-});
-
 export const PostContextProvider = ({ children }) => {
+  const { isAuth, loading: authLoading } = UserData(); // 🔴 IMPORTANT
+
   const [posts, setPosts] = useState([]);
   const [reels, setReels] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
 
-  /* ---------- Fetch Feed ---------- */
-  const fetchPosts = async () => {
+  async function fetchPosts() {
+    setLoading(true);
     try {
-      const { data } = await api.get("/api/post/all");
+      const { data } = await api.get("/post/all");
       setPosts(data.posts);
       setReels(data.reels);
-    } catch (error) {
-      console.error(error);
-      toast.error(error?.response?.data?.message || "Failed to load feed");
+    } catch {
+      setPosts([]);
+      setReels([]);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  /* ---------- Create Post / Reel ---------- */
-  const addPost = async (
-    formdata,
-    setFile,
-    setFilePrev,
-    setCaption,
-    type
-  ) => {
+  async function addPost(formdata, setFile, setFilePrev, setCaption, type) {
+    // ⛔ auth still initializing
+    if (authLoading) {
+      toast.error("Checking login status...");
+      return;
+    }
+
+    // ⛔ not logged in
+    if (!isAuth) {
+      toast.error("Please login first");
+      return;
+    }
+
     setAddLoading(true);
     try {
-      const { data } = await api.post(
-        `/api/post/new?type=${type}`,
-        formdata
-      );
-
+      const { data } = await api.post(`/post/new?type=${type}`, formdata);
       toast.success(data.message);
-      await fetchPosts();
+      fetchPosts();
       setFile("");
       setFilePrev("");
       setCaption("");
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Upload failed");
+      toast.error(error.response?.data?.message);
     } finally {
       setAddLoading(false);
     }
-  };
+  }
 
-  /* ---------- Like / Unlike ---------- */
-  const likePost = async (id) => {
+  async function likePost(id) {
+    if (authLoading) return;
+    if (!isAuth) {
+      toast.error("Please login first");
+      return;
+    }
+
     try {
-      const { data } = await api.post(`/api/post/like/${id}`);
+      const { data } = await api.post(`/post/like/${id}`);
       toast.success(data.message);
       fetchPosts();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Action failed");
+      toast.error(error.response?.data?.message);
     }
-  };
+  }
 
-  /* ---------- Comments ---------- */
-  const addComment = async (id, comment, setComment, setShow) => {
-    if (!comment) return;
+  async function addComment(id, comment, setComment, setShow) {
+    if (authLoading) return;
+    if (!isAuth) {
+      toast.error("Please login first");
+      return;
+    }
 
     try {
-      const { data } = await api.post(`/api/post/comment/${id}`, { comment });
+      const { data } = await api.post(`/post/comment/${id}`, { comment });
       toast.success(data.message);
       fetchPosts();
       setComment("");
       setShow(false);
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Comment failed");
+      toast.error(error.response?.data?.message);
     }
-  };
+  }
 
-  const deleteComment = async (id, commentId) => {
+  async function deletePost(id) {
+    if (authLoading) return;
+    if (!isAuth) {
+      toast.error("Please login first");
+      return;
+    }
+
+    try {
+      const { data } = await api.delete(`/post/${id}`);
+      toast.success(data.message);
+      fetchPosts();
+    } catch (error) {
+      toast.error(error.response?.data?.message);
+    }
+  }
+
+  async function deleteComment(id, commentId) {
+    if (authLoading) return;
+    if (!isAuth) {
+      toast.error("Please login first");
+      return;
+    }
+
     try {
       const { data } = await api.delete(
-        `/api/post/comment/${id}?commentId=${commentId}`
+        `/post/comment/${id}?commentId=${commentId}`
       );
       toast.success(data.message);
       fetchPosts();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Delete failed");
+      toast.error(error.response?.data?.message);
     }
-  };
+  }
 
-  /* ---------- Delete Post ---------- */
-  const deletePost = async (id) => {
-    try {
-      const { data } = await api.delete(`/api/post/${id}`);
-      toast.success(data.message);
-      fetchPosts();
-    } catch (error) {
-      toast.error(error?.response?.data?.message || "Delete failed");
-    }
-  };
-
-  /* ---------- Init ---------- */
+  // 🔴 ONLY FETCH POSTS AFTER AUTH IS READY
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    if (!authLoading && isAuth) {
+      fetchPosts();
+    }
+
+    if (!authLoading && !isAuth) {
+      setPosts([]);
+      setReels([]);
+    }
+  }, [isAuth, authLoading]);
 
   return (
     <PostContext.Provider
@@ -122,8 +146,8 @@ export const PostContextProvider = ({ children }) => {
         addPost,
         likePost,
         addComment,
-        deleteComment,
         deletePost,
+        deleteComment,
       }}
     >
       {children}

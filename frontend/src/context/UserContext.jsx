@@ -1,71 +1,54 @@
-import axios from "axios";
 import { createContext, useContext, useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import api from "../utils/axios";
 
-/* =========================
-   Context Initialization
-   ========================= */
 const UserContext = createContext();
 
-/* =========================
-   Axios Instance (GLOBAL)
-   ========================= */
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL, // 🔴 NO /api here
-  withCredentials: true,
-});
-
-/* =========================
-   Provider
-   ========================= */
 export const UserContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuth, setIsAuth] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  /* ---------- Register ---------- */
-  const registerUser = async (formdata, navigate, fetchPosts) => {
+  async function registerUser(formdata, navigate, fetchPosts) {
     setLoading(true);
     try {
-      const { data } = await api.post("/api/auth/register", formdata);
+      const { data } = await api.post("/auth/register", formdata);
 
       toast.success(data.message);
-      setUser(data.user);
       setIsAuth(true);
-      fetchPosts?.();
+      setUser(data.user);
       navigate("/");
+      fetchPosts();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Registration failed");
+      toast.error(error.response?.data?.message || "Register failed");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  /* ---------- Login ---------- */
-  const loginUser = async (email, password, navigate, fetchPosts) => {
+  async function loginUser(email, password, navigate, fetchPosts) {
     setLoading(true);
     try {
-      const { data } = await api.post("/api/auth/login", {
+      const { data } = await api.post("/auth/login", {
         email,
         password,
       });
 
       toast.success(data.message);
-      setUser(data.user);
       setIsAuth(true);
-      fetchPosts?.();
+      setUser(data.user);
       navigate("/");
+      fetchPosts();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Login failed");
+      toast.error(error.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  /* ---------- Fetch Logged-in User ---------- */
-  const fetchUser = async () => {
+  async function fetchUser() {
     try {
-      const { data } = await api.get("/api/user/me");
+      const { data } = await api.get("/user/me");
       setUser(data);
       setIsAuth(true);
     } catch {
@@ -74,57 +57,52 @@ export const UserContextProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  /* ---------- Logout ---------- */
-  const logoutUser = async (navigate) => {
+  async function logoutUser(navigate) {
     try {
-      const { data } = await api.post("/api/auth/logout");
+      const { data } = await api.get("/auth/logout");
       toast.success(data.message);
       setUser(null);
       setIsAuth(false);
       navigate("/login");
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Logout failed");
+      toast.error(error.response?.data?.message || "Logout failed");
     }
-  };
+  }
 
-  /* ---------- Follow / Unfollow ---------- */
-  const followUser = async (id, refreshProfile) => {
+  async function followUser(id) {
     try {
-      const { data } = await api.post(`/api/user/follow/${id}`);
+      const { data } = await api.post(`/user/follow/${id}`);
       toast.success(data.message);
-      refreshProfile?.();
+      fetchUser();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Action failed");
+      toast.error(error.response?.data?.message);
     }
-  };
+  }
 
-  /* ---------- Update Profile Picture ---------- */
-  const updateProfilePic = async (id, formdata, setFile) => {
+  async function updateProfilePic(id, formdata, setFile) {
     try {
-      const { data } = await api.put(`/api/user/${id}`, formdata);
+      const { data } = await api.put(`/user/${id}`, formdata);
       toast.success(data.message);
       fetchUser();
       setFile(null);
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Update failed");
+      toast.error(error.response?.data?.message);
     }
-  };
+  }
 
-  /* ---------- Update Profile Name ---------- */
-  const updateProfileName = async (id, name, setShowInput) => {
+  async function updateProfileName(id, name, setShowInput) {
     try {
-      const { data } = await api.put(`/api/user/${id}`, { name });
+      const { data } = await api.put(`/user/${id}`, { name });
       toast.success(data.message);
       fetchUser();
       setShowInput(false);
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Update failed");
+      toast.error(error.response?.data?.message);
     }
-  };
+  }
 
-  /* ---------- Init (Session Restore) ---------- */
   useEffect(() => {
     fetchUser();
   }, []);
@@ -132,16 +110,17 @@ export const UserContextProvider = ({ children }) => {
   return (
     <UserContext.Provider
       value={{
-        user,
-        isAuth,
-        loading,
-        registerUser,
         loginUser,
+        registerUser,
         logoutUser,
         followUser,
         updateProfilePic,
         updateProfileName,
-        fetchUser,
+        user,
+        isAuth,
+        loading,
+        setUser,
+        setIsAuth,
       }}
     >
       {children}
@@ -150,7 +129,4 @@ export const UserContextProvider = ({ children }) => {
   );
 };
 
-/* =========================
-   Hook Export
-   ========================= */
 export const UserData = () => useContext(UserContext);

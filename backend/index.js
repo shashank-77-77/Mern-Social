@@ -1,76 +1,54 @@
-// 🚨 MUST BE FIRST — ENV BOOTSTRAP (ESM SAFE)
-import "dotenv/config";
-
-/* =========================
-   Core Imports
-   ========================= */
 import express from "express";
-import cors from "cors";
+import dotenv from "dotenv";
+import path from "path";
 import cookieParser from "cookie-parser";
 import cloudinary from "cloudinary";
+import axios from "axios";
+import cors from "cors";
 
-/* =========================
-   Internal Modules
-   ========================= */
 import { connectDb } from "./database/db.js";
+import { app, server } from "./socket/socket.js";
+import { isAuth } from "./middlewares/isAuth.js";
+
 import { Chat } from "./models/ChatModel.js";
 import { User } from "./models/userModel.js";
-import { isAuth } from "./middlewares/isAuth.js";
-import { initSocket } from "./socket/socket.js";
 
-/* =========================
-   App Initialization
-   ========================= */
-const app = express();
-const server = initSocket(app);
+// routes
+import userRoutes from "./routes/userRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import postRoutes from "./routes/postRoutes.js";
+import messageRoutes from "./routes/messageRoutes.js";
 
-/* =========================
-   Cloudinary Configuration
-   ========================= */
+dotenv.config();
+
+/* ---------------------------- CORS (CRITICAL) ---------------------------- */
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
+
+/* ---------------------------- Cloudinary ---------------------------- */
 cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-/* =========================
-   Global Middlewares
-   ========================= */
+/* ---------------------------- Middlewares ---------------------------- */
 app.use(express.json());
 app.use(cookieParser());
 
-/* =========================
-   CORS CONFIG — FIXED
-   ========================= */
-const allowedOrigins = [
-  "https://mern-social-frontend-s25k.onrender.com",
-];
+/* ------------------------------ Routes ------------------------------- */
+app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/post", postRoutes);
+app.use("/api/messages", messageRoutes);
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
+/* ------------------------- Custom API Routes ------------------------- */
 
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, origin); // echo origin
-    }
-
-    return callback(new Error("CORS not allowed"));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // CRITICAL for preflight
-
-
-
-/* =========================
-   Core API Routes
-   ========================= */
-
-// Fetch chats for logged-in user
+// get all chats
 app.get("/api/messages/chats", isAuth, async (req, res) => {
   try {
     const chats = await Chat.find({
@@ -82,7 +60,7 @@ app.get("/api/messages/chats", isAuth, async (req, res) => {
 
     chats.forEach((chat) => {
       chat.users = chat.users.filter(
-        (user) => user._id.toString() !== req.user._id.toString()
+        (u) => u._id.toString() !== req.user._id.toString()
       );
     });
 
@@ -92,11 +70,10 @@ app.get("/api/messages/chats", isAuth, async (req, res) => {
   }
 });
 
-// Fetch all users (search enabled)
+// get all users
 app.get("/api/user/all", isAuth, async (req, res) => {
   try {
     const search = req.query.search || "";
-
     const users = await User.find({
       name: { $regex: search, $options: "i" },
       _id: { $ne: req.user._id },
@@ -108,32 +85,33 @@ app.get("/api/user/all", isAuth, async (req, res) => {
   }
 });
 
-/* =========================
-   Modular Route Binding
-   ========================= */
-import authRoutes from "./routes/authRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
-import postRoutes from "./routes/postRoutes.js";
-import messageRoutes from "./routes/messageRoutes.js";
+/* ---------------------- Serve Frontend (PROD) ----------------------- */
+const __dirname = path.resolve();
 
-app.use("/api/auth", authRoutes);
-app.use("/api/user", userRoutes);
-app.use("/api/post", postRoutes);
-app.use("/api/messages", messageRoutes);
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "frontend/dist")));
 
-/* =========================
-   Health Check
-   ========================= */
-app.get("/health", (req, res) => {
-  res.status(200).send("OK");
-});
+  app.get("*", (req, res) => {
+    res.sendFile(
+      path.join(__dirname, "frontend", "dist", "index.html")
+    );
+  });
+}
 
-/* =========================
-   Server Bootstrap
-   ========================= */
+/* ------------------ Render Keep-Alive (PROD ONLY) ------------------- */
+if (process.env.NODE_ENV === "production") {
+  const url = "https://mern-social-3e3m.onrender.com";
+  const interval = 30000;
+
+  setInterval(() => {
+    axios.get(url).catch(() => {});
+  }, interval);
+}
+
+/* ------------------------------ Server ------------------------------ */
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, async () => {
-  await connectDb();
-  console.log(`🚀 Backend service running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  connectDb();
 });

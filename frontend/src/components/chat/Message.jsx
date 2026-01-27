@@ -1,19 +1,11 @@
 import React from "react";
 
 const Message = ({ ownMessage, message }) => {
-  if (!message) return null;
-
   return (
-    <div
-      className={`mb-2 flex ${
-        ownMessage ? "justify-end" : "justify-start"
-      }`}
-    >
+    <div className={`mb-2 ${ownMessage ? "text-right" : "text-left"}`}>
       <span
-        className={`max-w-[70%] break-words p-2 rounded-lg text-sm ${
-          ownMessage
-            ? "bg-blue-500 text-white"
-            : "bg-gray-300 text-black"
+        className={`inline-block p-2 rounded-lg ${
+          ownMessage ? "bg-blue-500 text-white" : "bg-gray-300 text-black"
         }`}
       >
         {message}
