@@ -1,22 +1,37 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
+/* =========================================================
+   404 — NOT FOUND
+   ========================================================= */
 const NotFound = () => {
   const navigate = useNavigate();
+
   return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="flex-col space-y-4 text-center">
-        <div className="text-gray-600 text-xl font-medium">Social Media</div>
-        <div className="text-5xl font-medium">Page not found</div>
-        <div className="text-gray-500">sorry, this page isn't available</div>
-        <div className="flex items-center justify-center">
-          <div
-            onClick={() => navigate("/")}
-            className="bg-gray-600 px-4 py-1 text-white font-medium rounded-lg hover:scale-105 cursor-pointer"
-          >
-            Visit Homepage
-          </div>
+    <div className="flex items-center justify-center min-h-screen bg-[var(--bg-main)]">
+      <div className="card w-full max-w-md p-8 text-center">
+        {/* Brand */}
+        <div className="text-sm text-gray-500 mb-2">
+          Social Media Platform
         </div>
+
+        {/* Headline */}
+        <h1 className="text-4xl font-semibold mb-2">
+          Page not found
+        </h1>
+
+        {/* Subtext */}
+        <p className="text-gray-500 mb-6">
+          The page you’re looking for doesn’t exist or has been moved.
+        </p>
+
+        {/* Primary CTA */}
+        <button
+          onClick={() => navigate("/")}
+          className="btn-primary"
+        >
+          Go to Homepage
+        </button>
       </div>
     </div>
   );

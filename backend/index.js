@@ -18,10 +18,22 @@ import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
+import aiRoutes from "./routes/ai.routes.js";
 
 dotenv.config();
 
-/* ---------------------------- CORS (CRITICAL) ---------------------------- */
+/* ======================================================
+   🔥 CRITICAL MIDDLEWARES (MUST COME FIRST)
+====================================================== */
+
+// ✅ JSON BODY PARSER (REQUIRED FOR AI CHAT)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ✅ COOKIE PARSER (REQUIRED FOR AUTH)
+app.use(cookieParser());
+
+// ✅ CORS (FRONTEND ↔ BACKEND)
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -29,24 +41,30 @@ app.use(
   })
 );
 
-/* ---------------------------- Cloudinary ---------------------------- */
+/* ======================================================
+   ☁️ CLOUDINARY CONFIG
+====================================================== */
 cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-/* ---------------------------- Middlewares ---------------------------- */
-app.use(express.json());
-app.use(cookieParser());
+/* ======================================================
+   🚀 ROUTES (AFTER MIDDLEWARES)
+====================================================== */
 
-/* ------------------------------ Routes ------------------------------- */
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/post", postRoutes);
 app.use("/api/messages", messageRoutes);
 
-/* ------------------------- Custom API Routes ------------------------- */
+// ✅ AI ROUTES (NOW BODY & AUTH WORK)
+app.use("/api/ai", aiRoutes);
+
+/* ======================================================
+   🧠 CUSTOM APIs
+====================================================== */
 
 // get all chats
 app.get("/api/messages/chats", isAuth, async (req, res) => {
@@ -85,7 +103,10 @@ app.get("/api/user/all", isAuth, async (req, res) => {
   }
 });
 
-/* ---------------------- Serve Frontend (PROD) ----------------------- */
+/* ======================================================
+   🌐 SERVE FRONTEND (PRODUCTION)
+====================================================== */
+
 const __dirname = path.resolve();
 
 if (process.env.NODE_ENV === "production") {
@@ -98,7 +119,10 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-/* ------------------ Render Keep-Alive (PROD ONLY) ------------------- */
+/* ======================================================
+   ♻️ RENDER KEEP-ALIVE
+====================================================== */
+
 if (process.env.NODE_ENV === "production") {
   const url = "https://mern-social-3e3m.onrender.com";
   const interval = 30000;
@@ -108,7 +132,10 @@ if (process.env.NODE_ENV === "production") {
   }, interval);
 }
 
-/* ------------------------------ Server ------------------------------ */
+/* ======================================================
+   🔌 SERVER + DB
+====================================================== */
+
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {

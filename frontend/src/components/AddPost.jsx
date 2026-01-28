@@ -1,104 +1,137 @@
 import React, { useState } from "react";
-import { PostData } from "../context/PostContext";
-import { UserData } from "../context/UserContext";
-import { LoadingAnimation } from "./Loading";
+import axios from "axios";
 import toast from "react-hot-toast";
+import { PostData } from "../context/PostContext";
 
 const AddPost = ({ type }) => {
+  const { fetchPosts } = PostData();
+
   const [caption, setCaption] = useState("");
-  const [file, setFile] = useState("");
-  const [filePrev, setFilePrev] = useState("");
+  const [file, setFile] = useState(null);
+  const [useAI, setUseAI] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const { addPost, addLoading } = PostData();
-  const { isAuth, loading: authLoading } = UserData(); // 🔴 IMPORTANT
+  /* =========================================================
+     FILE HANDLER (PREVIEW)
+     ========================================================= */
+  const fileChangeHandler = (e) => {
+    const selected = e.target.files[0];
+    if (!selected) return;
 
-  const changeFileHandler = (e) => {
-    const selectedFile = e.target.files[0];
-    if (!selectedFile) return;
-
-    const reader = new FileReader();
-    reader.readAsDataURL(selectedFile);
-
-    reader.onloadend = () => {
-      setFilePrev(reader.result);
-      setFile(selectedFile);
-    };
+    setFile(selected);
+    setPreview(URL.createObjectURL(selected));
   };
 
-  const submitHandler = (e) => {
+  /* =========================================================
+     SUBMIT HANDLER
+     ========================================================= */
+  const submitHandler = async (e) => {
     e.preventDefault();
 
-    // 🔴 FINAL GUARD (UI level)
-    if (authLoading) {
-      toast.error("Checking login status...");
-      return;
-    }
-
-    if (!isAuth) {
-      toast.error("Please login first");
-      return;
-    }
-
     if (!file) {
-      toast.error("Please select a file");
+      toast.error("Please select an image or video");
       return;
     }
 
-    const formdata = new FormData();
-    formdata.append("caption", caption);
-    formdata.append("file", file);
+    const formData = new FormData();
+    formData.append("caption", caption);
+    formData.append("file", file);
+    formData.append("useAI", useAI); // backend contract preserved
+    formData.append("type", type);
 
-    // ✅ CORRECT argument order
-    addPost(formdata, setFile, setFilePrev, setCaption, type);
+    try {
+      setIsUploading(true);
+
+      await axios.post(`/api/post/new?type=${type}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      toast.success("Post uploaded successfully");
+
+      // reset state
+      setCaption("");
+      setFile(null);
+      setPreview(null);
+      setUseAI(false);
+
+      fetchPosts();
+    } catch (error) {
+      toast.error("Failed to upload post");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
+  /* =========================================================
+     RENDER
+     ========================================================= */
   return (
-    <div className="bg-gray-100 flex items-center justify-center pt-3 pb-5">
-      <div className="bg-white p-8 rounded-lg shadow-md max-w-md">
-        <form
-          onSubmit={submitHandler}
-          className="flex flex-col gap-4 items-center justify-between mb-4"
+    <div className="flex justify-center mb-6">
+      <form
+        onSubmit={submitHandler}
+        className="card w-full max-w-md p-4 flex flex-col gap-4"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-lg">Create Post</h3>
+          {useAI && <span className="ai-badge">✨ AI ON</span>}
+        </div>
+
+        {/* Caption */}
+        <input
+          type="text"
+          className="custom-input w-full"
+          placeholder="My first gym day"
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+        />
+
+        {/* Preview */}
+        {preview && (
+          <div className="rounded-xl overflow-hidden border">
+            {type === "post" ? (
+              <img
+                src={preview}
+                alt="preview"
+                className="w-full object-cover max-h-[360px]"
+              />
+            ) : (
+              <video
+                src={preview}
+                controls
+                className="w-full object-cover max-h-[360px]"
+              />
+            )}
+          </div>
+        )}
+
+        {/* AI Toggle */}
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={useAI}
+            onChange={(e) => setUseAI(e.target.checked)}
+          />
+          Enhance caption using AI
+        </label>
+
+        {/* File Upload */}
+        <input
+          type="file"
+          accept="image/*,video/*"
+          onChange={fileChangeHandler}
+        />
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={isUploading}
+          className="btn-primary"
         >
-          <input
-            type="text"
-            className="custom-input"
-            placeholder="Enter Caption"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-          />
-
-          <input
-            type="file"
-            className="custom-input"
-            accept={type === "post" ? "image/*" : "video/*"}
-            onChange={changeFileHandler}
-            required
-          />
-
-          {filePrev && (
-            <>
-              {type === "post" ? (
-                <img src={filePrev} alt="preview" />
-              ) : (
-                <video
-                  controls
-                  controlsList="nodownload"
-                  src={filePrev}
-                  className="h-[450px] w-[300px]"
-                />
-              )}
-            </>
-          )}
-
-          <button
-            type="submit"
-            disabled={addLoading || authLoading || !isAuth} // 🔴 KEY FIX
-            className="bg-blue-500 text-white px-4 py-2 rounded-md disabled:opacity-50"
-          >
-            {addLoading ? <LoadingAnimation /> : "+ Add Post"}
-          </button>
-        </form>
-      </div>
+          {isUploading ? "Uploading…" : "+ Add Post"}
+        </button>
+      </form>
     </div>
   );
 };

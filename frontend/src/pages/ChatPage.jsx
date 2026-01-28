@@ -1,119 +1,196 @@
-import React, { useEffect, useState } from "react";
-import { ChatData } from "../context/ChatContext";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { FaSearch } from "react-icons/fa";
-import Chat from "../components/chat/Chat";
-import MessageContainer from "../components/chat/MessageContainer";
+
+import { ChatData } from "../context/ChatContext";
 import { SocketData } from "../context/SocketContext";
 
+import Chat from "../components/chat/Chat";
+import MessageContainer from "../components/chat/MessageContainer";
+
+/* =========================================================
+   CHAT PAGE
+   ========================================================= */
 const ChatPage = ({ user }) => {
-  const { createChat, selectedChat, setSelectedChat, chats, setChats } =
-    ChatData();
+  const {
+    createChat,
+    selectedChat,
+    setSelectedChat,
+    chats = [],
+    setChats,
+  } = ChatData();
 
-  const [users, setUsers] = useState([]);
+  const { onlineUsers } = SocketData();
+
   const [query, setQuery] = useState("");
-  const [search, setSearch] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [searchMode, setSearchMode] = useState(false);
+  const [searching, setSearching] = useState(false);
 
-  async function fetchAllUsers() {
-    try {
-      const { data } = await axios.get("/api/user/all?search=" + query);
+  /* =========================================================
+     FETCH CHATS (ON LOAD)
+     ========================================================= */
+  useEffect(() => {
+    const getAllChats = async () => {
+      try {
+        const { data } = await axios.get("/api/messages/chats");
+        setChats(data || []);
+      } catch (error) {
+        console.error("Failed to fetch chats", error);
+      }
+    };
 
-      setUsers(data);
-    } catch (error) {
-      console.log(error);
+    getAllChats();
+  }, [setChats]);
+
+  /* =========================================================
+     SEARCH USERS (DEBOUNCED)
+     ========================================================= */
+  const canSearch = useMemo(
+    () => query.trim().length > 0 && searchMode,
+    [query, searchMode]
+  );
+
+  useEffect(() => {
+    if (!canSearch) {
+      setUsers([]);
+      return;
     }
-  }
 
-  const getAllChats = async () => {
+    const t = setTimeout(async () => {
+      try {
+        setSearching(true);
+        const { data } = await axios.get(
+          `/api/user/all?search=${encodeURIComponent(query)}`
+        );
+        setUsers(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("User search failed", error);
+        setUsers([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(t);
+  }, [canSearch, query]);
+
+  /* =========================================================
+     CREATE CHAT
+     ========================================================= */
+  const createNewChat = async (id) => {
     try {
+      await createChat(id);
+      setSearchMode(false);
+      setQuery("");
       const { data } = await axios.get("/api/messages/chats");
-      setChats(data);
+      setChats(data || []);
     } catch (error) {
-      console.log(error);
+      console.error("Failed to create chat", error);
     }
   };
 
-  useEffect(() => {
-    fetchAllUsers();
-  }, [query]);
-
-  useEffect(() => {
-    getAllChats();
-  }, []);
-
-  async function createNewChat(id) {
-    await createChat(id);
-    setSearch(false);
-    getAllChats();
-  }
-
-  const { onlineUsers, socket } = SocketData();
+  /* =========================================================
+     RENDER
+     ========================================================= */
   return (
-    <div className="w-[100%] md:w-[750px] md:p-4">
-      <div className="flex gap-4 mx-auto">
-        <div className="w-[30%]">
-          <div className="top">
+    <div className="min-h-screen bg-[var(--bg-main)] pb-16">
+      <div className="feed flex gap-4">
+        {/* LEFT: CHAT LIST / SEARCH */}
+        <div className="w-full md:w-[30%] card p-3">
+          {/* Top Controls */}
+          <div className="flex items-center gap-2 mb-3">
             <button
-              className="bg-blue-500 text-white px-3 py-1 rounded-full"
-              onClick={() => setSearch(!search)}
+              onClick={() => {
+                setSearchMode((p) => !p);
+                setQuery("");
+              }}
+              className="btn-primary p-2 rounded-full"
             >
-              {search ? "X" : <FaSearch />}
+              {searchMode ? "✕" : <FaSearch />}
             </button>
-            {search ? (
-              <>
-                <input
-                  type="text"
-                  className="custom-input"
-                  style={{ width: "100px", border: "gray solid 1px" }}
-                  placeholder="Enter name"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
 
-                <div className="users">
-                  {users && users.length > 0 ? (
-                    users.map((e) => (
-                      <div
-                        key={e._id}
-                        onClick={() => createNewChat(e._id)}
-                        className="bg-gray-500 text-white p-2 mt-2 cursor-pointer flex justify-center items-center gap-2"
-                      >
-                        <img
-                          src={e.profilePic.url}
-                          className="w-8 h-8 rounded-full"
-                          alt=""
-                        />
-                        {e.name}
-                      </div>
-                    ))
-                  ) : (
-                    <p>No Users</p>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-col justify-center items-center mt-2">
-                {chats.map((e) => (
-                  <Chat
-                    key={e._id}
-                    chat={e}
-                    setSelectedChat={setSelectedChat}
-                    isOnline={onlineUsers.includes(e.users[0]._id)}
-                  />
-                ))}
-              </div>
+            {searchMode && (
+              <input
+                type="text"
+                placeholder="Search users"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="custom-input flex-1"
+              />
             )}
           </div>
+
+          {/* Content */}
+          {searchMode ? (
+            <div className="space-y-2">
+              {searching ? (
+                <p className="text-sm text-gray-500 text-center">
+                  Searching…
+                </p>
+              ) : users.length > 0 ? (
+                users.map((u) => (
+                  <div
+                    key={u._id}
+                    onClick={() => createNewChat(u._id)}
+                    className="
+                      flex items-center gap-3
+                      px-3 py-2
+                      rounded-xl
+                      cursor-pointer
+                      hover:bg-gray-100
+                      transition
+                    "
+                  >
+                    <img
+                      src={u.profilePic.url}
+                      alt={u.name}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                    <span className="font-medium truncate">
+                      {u.name}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 text-center">
+                  No users found
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {chats.length > 0 ? (
+                chats.map((c) => (
+                  <Chat
+                    key={c._id}
+                    chat={c}
+                    setSelectedChat={setSelectedChat}
+                    isOnline={onlineUsers.includes(c.users[0]._id)}
+                  />
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 text-center">
+                  No chats yet
+                </p>
+              )}
+            </div>
+          )}
         </div>
-        {selectedChat === null ? (
-          <div className="w-[70%] mx-20 mt-40 text-2xl">
-            Hello 👋 {user.name} select a chat to start conversation
-          </div>
-        ) : (
-          <div className="w-[70%]">
-            <MessageContainer selectedChat={selectedChat} setChats={setChats} />
-          </div>
-        )}
+
+        {/* RIGHT: MESSAGE AREA */}
+        <div className="hidden md:block md:w-[70%] card p-0">
+          {selectedChat ? (
+            <MessageContainer
+              selectedChat={selectedChat}
+              setChats={setChats}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500 text-lg">
+              Hello 👋 {user.name}, select a chat to start messaging
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

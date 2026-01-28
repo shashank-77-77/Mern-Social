@@ -1,15 +1,22 @@
 import React from "react";
 
+/* =========================================================
+   MESSAGE BUBBLE (CHAT)
+   ========================================================= */
 const Message = ({ ownMessage, message }) => {
   return (
-    <div className={`mb-2 ${ownMessage ? "text-right" : "text-left"}`}>
-      <span
-        className={`inline-block p-2 rounded-lg ${
-          ownMessage ? "bg-blue-500 text-white" : "bg-gray-300 text-black"
+    <div
+      className={`flex mb-2 ${
+        ownMessage ? "justify-end" : "justify-start"
+      }`}
+    >
+      <div
+        className={`message ${
+          ownMessage ? "own" : "other"
         }`}
       >
         {message}
-      </span>
+      </div>
     </div>
   );
 };

@@ -1,107 +1,114 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { UserData } from "../context/UserContext";
-import { PostData } from "../context/PostContext";
-import PostCard from "../components/PostCard";
-import { FaArrowDownLong, FaArrowUp } from "react-icons/fa6";
-import Modal from "../components/Modal";
 import axios from "axios";
-import { Loading } from "../components/Loading";
-import { CiEdit } from "react-icons/ci";
 import toast from "react-hot-toast";
 
+import { UserData } from "../context/UserContext";
+import { PostData } from "../context/PostContext";
+
+import PostCard from "../components/PostCard";
+import Modal from "../components/Modal";
+import { Loading } from "../components/Loading";
+
+import { FaArrowDownLong, FaArrowUp } from "react-icons/fa6";
+import { CiEdit } from "react-icons/ci";
+
+/* =========================================================
+   ACCOUNT (LOGGED-IN USER PROFILE)
+   ========================================================= */
 const Account = ({ user }) => {
   const navigate = useNavigate();
 
-  const { logoutUser, updateProfilePic, updateProfileName } = UserData();
+  const {
+    logoutUser,
+    updateProfilePic,
+    updateProfileName,
+  } = UserData();
 
-  const { posts, reels, loading } = PostData();
+  const { posts = [], reels = [], loading } = PostData();
 
-  let myPosts;
+  /* =========================================================
+     LOCAL STATE
+     ========================================================= */
+  const [tab, setTab] = useState("post");
+  const [reelIndex, setReelIndex] = useState(0);
 
-  if (posts) {
-    myPosts = posts.filter((post) => post.owner._id === user._id);
-  }
-  let myReels;
-
-  if (reels) {
-    myReels = reels.filter((reel) => reel.owner._id === user._id);
-  }
-
-  const [type, setType] = useState("post");
-
-  const logoutHandler = () => {
-    logoutUser(navigate);
-  };
-
-  const [index, setIndex] = useState(0);
-
-  const prevReel = () => {
-    if (index === 0) {
-      console.log("null");
-      return null;
-    }
-    setIndex(index - 1);
-  };
-  const nextReel = () => {
-    if (index === myReels.length - 1) {
-      console.log("null");
-      return null;
-    }
-    setIndex(index + 1);
-  };
-
-  const [show, setShow] = useState(false);
-  const [show1, setShow1] = useState(false);
+  const [showFollowers, setShowFollowers] = useState(false);
+  const [showFollowings, setShowFollowings] = useState(false);
 
   const [followersData, setFollowersData] = useState([]);
   const [followingsData, setFollowingsData] = useState([]);
 
-  async function followData() {
-    try {
-      const { data } = await axios.get("/api/user/followdata/" + user._id);
+  const [file, setFile] = useState(null);
 
-      setFollowersData(data.followers);
-      setFollowingsData(data.followings);
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  const [editingName, setEditingName] = useState(false);
+  const [name, setName] = useState(user?.name || "");
 
-  const [file, setFile] = useState("");
-
-  const changeFileHandler = (e) => {
-    const file = e.target.files[0];
-    setFile(file);
-  };
-
-  const changleImageHandler = () => {
-    const formdata = new FormData();
-
-    formdata.append("file", file);
-
-    updateProfilePic(user._id, formdata, setFile);
-  };
-
-  useEffect(() => {
-    followData();
-  }, [user]);
-
-  const [showInput, setShowInput] = useState(false);
-  const [name, setName] = useState(user.name ? user.name : "");
-
-  const UpdateName = () => {
-    updateProfileName(user._id, name, setShowInput);
-  };
-
-  const [showUpdatePass, setShowUpdatePass] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
-  async function updatePassword(e) {
+  /* =========================================================
+     DERIVED DATA
+     ========================================================= */
+  const myPosts = useMemo(
+    () => posts.filter((p) => p.owner?._id === user?._id),
+    [posts, user]
+  );
+
+  const myReels = useMemo(
+    () => reels.filter((r) => r.owner?._id === user?._id),
+    [reels, user]
+  );
+
+  /* =========================================================
+     FOLLOW DATA (MODALS)
+     ========================================================= */
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const fetchFollowData = async () => {
+      try {
+        const { data } = await axios.get(
+          `/api/user/followdata/${user._id}`
+        );
+        setFollowersData(data.followers || []);
+        setFollowingsData(data.followings || []);
+      } catch (error) {
+        console.error("Failed to fetch follow data", error);
+      }
+    };
+
+    fetchFollowData();
+  }, [user]);
+
+  /* =========================================================
+     HANDLERS
+     ========================================================= */
+  const logoutHandler = () => {
+    logoutUser(navigate);
+  };
+
+  const changeFileHandler = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const changeImageHandler = () => {
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    updateProfilePic(user._id, formData, setFile);
+  };
+
+  const updateNameHandler = () => {
+    if (!name.trim()) return;
+    updateProfileName(user._id, name, setEditingName);
+  };
+
+  const updatePassword = async (e) => {
     e.preventDefault();
     try {
-      const { data } = await axios.post("/api/user/" + user._id, {
+      const { data } = await axios.post(`/api/user/${user._id}`, {
         oldPassword,
         newPassword,
       });
@@ -109,208 +116,257 @@ const Account = ({ user }) => {
       toast.success(data.message);
       setOldPassword("");
       setNewPassword("");
-      setShowUpdatePass(false);
+      setShowPasswordForm(false);
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(
+        error?.response?.data?.message || "Password update failed"
+      );
     }
+  };
+
+  const prevReel = () =>
+    setReelIndex((i) => (i > 0 ? i - 1 : i));
+
+  const nextReel = () =>
+    setReelIndex((i) =>
+      i < myReels.length - 1 ? i + 1 : i
+    );
+
+  /* =========================================================
+     GUARD
+     ========================================================= */
+  if (loading) return <Loading />;
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-500">User not found</p>
+      </div>
+    );
   }
+
+  /* =========================================================
+     RENDER
+     ========================================================= */
   return (
-    <>
-      {loading ? (
-        <Loading />
-      ) : (
-        <>
-          {user && (
-            <>
-              {loading ? (
-                <Loading />
-              ) : (
-                <div className="bg-gray-100 min-h-screen flex flex-col gap-4 items-center justify-center pt-3 pb-14">
-                  {show && (
-                    <Modal
-                      value={followersData}
-                      title={"Followers"}
-                      setShow={setShow}
-                    />
-                  )}
-                  {show1 && (
-                    <Modal
-                      value={followingsData}
-                      title={"Followings"}
-                      setShow={setShow1}
-                    />
-                  )}
-                  <div className="bg-white flex justify-between gap-4 p-8 rounded-lg shadow-md max-w-md">
-                    <div className="image flex flex-col justify-between mb-4 gap-4">
-                      <img
-                        src={user.profilePic.url}
-                        alt=""
-                        className="w-[180px] h-[180px] rounded-full"
-                      />
-                      <div className="update w-[150px] flex flex-col justify-center items-center">
-                        <input
-                          type="file"
-                          onChange={changeFileHandler}
-                          required
-                        />
-                        <button
-                          className="bg-blue-500 text-white px-3 py-2"
-                          onClick={changleImageHandler}
-                        >
-                          Update Profile
-                        </button>
-                      </div>
-                    </div>
+    <div className="min-h-screen bg-[var(--bg-main)] pb-16">
+      {/* Modals */}
+      {showFollowers && (
+        <Modal
+          value={followersData}
+          title="Followers"
+          setShow={setShowFollowers}
+        />
+      )}
+      {showFollowings && (
+        <Modal
+          value={followingsData}
+          title="Followings"
+          setShow={setShowFollowings}
+        />
+      )}
 
-                    <div className="flex flex-col gap-2">
-                      {showInput ? (
-                        <>
-                          <div className="flex justify-center items-center gap-2">
-                            <input
-                              className="custom-input"
-                              style={{ width: "80px" }}
-                              value={name}
-                              onChange={(e) => setName(e.target.value)}
-                              placeholder="Enter Name"
-                              required
-                            />
-                            <button onClick={UpdateName}>Update</button>
-                            <button
-                              onClick={() => setShowInput(false)}
-                              className="bg-red-400 text-white p-2 rounded-full"
-                            >
-                              X
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-gray-800 font-semibold">
-                          {user.name}{" "}
-                          <button onClick={() => setShowInput(true)}>
-                            <CiEdit />
-                          </button>
-                        </p>
-                      )}
-                      <p className="text-gray-500 text-sm">{user.email}</p>
-                      <p className="text-gray-500 text-sm">{user.gender}</p>
-                      <p
-                        className="text-gray-500 text-sm cursor-pointer"
-                        onClick={() => setShow(true)}
-                      >
-                        {user.followers.length} follower
-                      </p>
-                      <p
-                        className="text-gray-500 text-sm cursor-pointer"
-                        onClick={() => setShow1(true)}
-                      >
-                        {user.followings.length} following
-                      </p>
-                      <button
-                        onClick={logoutHandler}
-                        className=" bg-red-500 text-white rounded-md"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  </div>
+      <div className="feed">
+        {/* Profile Card */}
+        <div className="card p-6 flex gap-6 mb-4">
+          {/* Avatar */}
+          <div className="flex flex-col gap-3">
+            <img
+              src={user.profilePic.url}
+              alt={user.name}
+              className="w-28 h-28 rounded-full object-cover"
+            />
 
-                  <button
-                    onClick={() => setShowUpdatePass(!showUpdatePass)}
-                    className="bg-blue-500 px-2 py-1 rounded-sm text-white"
-                  >
-                    {showUpdatePass ? "X" : "Update Password"}
-                  </button>
+            <input type="file" onChange={changeFileHandler} />
+            <button
+              onClick={changeImageHandler}
+              className="btn-primary text-sm"
+            >
+              Update Profile
+            </button>
+          </div>
 
-                  {showUpdatePass && (
-                    <form
-                      onSubmit={updatePassword}
-                      className="flex justify-center items-center flex-col bg-white p-2 rounded-sm gap-4"
+          {/* Info */}
+          <div className="flex flex-col gap-2 flex-1">
+            {/* Name */}
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  className="custom-input"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+                <button
+                  onClick={updateNameHandler}
+                  className="btn-primary text-sm"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setEditingName(false)}
+                  className="text-sm text-gray-500"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-lg">
+                  {user.name}
+                </h2>
+                <button onClick={() => setEditingName(true)}>
+                  <CiEdit />
+                </button>
+              </div>
+            )}
+
+            <p className="text-sm text-gray-500">
+              {user.email}
+            </p>
+            <p className="text-sm text-gray-500">
+              {user.gender}
+            </p>
+
+            <div className="flex gap-4 text-sm">
+              <button
+                onClick={() => setShowFollowers(true)}
+                className="hover:underline"
+              >
+                {user.followers.length} followers
+              </button>
+              <button
+                onClick={() => setShowFollowings(true)}
+                className="hover:underline"
+              >
+                {user.followings.length} following
+              </button>
+            </div>
+
+            <button
+              onClick={logoutHandler}
+              className="bg-red-500 text-white rounded-md px-4 py-2 mt-2"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+
+        {/* Password Update */}
+        <button
+          onClick={() => setShowPasswordForm((p) => !p)}
+          className="btn-primary mb-4"
+        >
+          {showPasswordForm ? "Cancel" : "Update Password"}
+        </button>
+
+        {showPasswordForm && (
+          <form
+            onSubmit={updatePassword}
+            className="card p-4 mb-4 flex flex-col gap-3"
+          >
+            <input
+              type="password"
+              className="custom-input"
+              placeholder="Old password"
+              value={oldPassword}
+              onChange={(e) => setOldPassword(e.target.value)}
+              required
+            />
+            <input
+              type="password"
+              className="custom-input"
+              placeholder="New password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+            />
+            <button type="submit" className="btn-primary">
+              Save Password
+            </button>
+          </form>
+        )}
+
+        {/* Tabs */}
+        <div className="card p-3 flex justify-center gap-8 mb-4">
+          <button
+            onClick={() => setTab("post")}
+            className={
+              tab === "post"
+                ? "font-semibold"
+                : "text-gray-500"
+            }
+          >
+            Posts
+          </button>
+          <button
+            onClick={() => setTab("reel")}
+            className={
+              tab === "reel"
+                ? "font-semibold"
+                : "text-gray-500"
+            }
+          >
+            Reels
+          </button>
+        </div>
+
+        {/* Content */}
+        {tab === "post" && (
+          <>
+            {myPosts.length > 0 ? (
+              myPosts.map((p) => (
+                <PostCard
+                  key={p._id}
+                  value={p}
+                  type="post"
+                />
+              ))
+            ) : (
+              <div className="card p-6 text-center">
+                No posts yet
+              </div>
+            )}
+          </>
+        )}
+
+        {tab === "reel" && (
+          <>
+            {myReels.length > 0 ? (
+              <div className="flex items-center gap-4 justify-center">
+                <PostCard
+                  value={myReels[reelIndex]}
+                  type="reel"
+                  key={myReels[reelIndex]._id}
+                />
+
+                <div className="flex flex-col gap-4">
+                  {reelIndex > 0 && (
+                    <button
+                      onClick={prevReel}
+                      className="btn-primary rounded-full p-4"
                     >
-                      <input
-                        type="password"
-                        className="custom-input"
-                        placeholder="Old Password"
-                        value={oldPassword}
-                        onChange={(e) => setOldPassword(e.target.value)}
-                        required
-                      />
-                      <input
-                        type="password"
-                        className="custom-input"
-                        placeholder="new Password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        required
-                      />
-                      <button
-                        type="submit"
-                        className="bg-blue-500 px-2 py-1 rounded-sm text-white"
-                      >
-                        Update Password
-                      </button>
-                    </form>
+                      <FaArrowUp />
+                    </button>
                   )}
-
-                  <div className="controls flex justify-center items-center bg-white p-4 rounded-md gap-7">
-                    <button onClick={() => setType("post")}>Posts</button>
-                    <button onClick={() => setType("reel")}>Reels</button>
-                  </div>
-
-                  {type === "post" && (
-                    <>
-                      {myPosts && myPosts.length > 0 ? (
-                        myPosts.map((e) => (
-                          <PostCard type={"post"} value={e} key={e._id} />
-                        ))
-                      ) : (
-                        <p>No Post Yet</p>
-                      )}
-                    </>
-                  )}
-                  {type === "reel" && (
-                    <>
-                      {myReels && myReels.length > 0 ? (
-                        <div className="flex gap-3 justify-center items-center">
-                          <PostCard
-                            type={"reel"}
-                            value={myReels[index]}
-                            key={myReels[index]._id}
-                          />
-                          <div className="button flex flex-col justify-center items-center gap-6">
-                            {index === 0 ? (
-                              ""
-                            ) : (
-                              <button
-                                className="bg-gray-500 text-white py-5 px-5 rounded-full"
-                                onClick={prevReel}
-                              >
-                                <FaArrowUp />
-                              </button>
-                            )}
-                            {index === myReels.length - 1 ? (
-                              ""
-                            ) : (
-                              <button
-                                className="bg-gray-500 text-white py-5 px-5 rounded-full"
-                                onClick={nextReel}
-                              >
-                                <FaArrowDownLong />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <p>No Reels Yet</p>
-                      )}
-                    </>
+                  {reelIndex < myReels.length - 1 && (
+                    <button
+                      onClick={nextReel}
+                      className="btn-primary rounded-full p-4"
+                    >
+                      <FaArrowDownLong />
+                    </button>
                   )}
                 </div>
-              )}
-            </>
-          )}
-        </>
-      )}
-    </>
+              </div>
+            ) : (
+              <div className="card p-6 text-center">
+                No reels yet
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 };
 
