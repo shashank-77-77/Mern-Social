@@ -1,5 +1,5 @@
 import { Chat } from "../models/ChatModel.js";
-import { Messages } from "../models/Messages.js";
+import Message from "../models/Messages.js";
 import { getReciverSocketId, io } from "../socket/socket.js";
 import TryCatch from "../utils/Trycatch.js";
 

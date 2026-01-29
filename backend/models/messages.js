@@ -2,16 +2,12 @@ import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema(
   {
-    chatId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Chat",
-    },
-    sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    text: String,
+    chatId: { type: mongoose.Schema.Types.ObjectId, ref: "Chat", required: true },
+    sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    text: { type: String, required: true, trim: true },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-export const Messages = mongoose.model("Messages", messageSchema);
+// Use singular name & default export
+export default mongoose.model("Message", messageSchema);
