@@ -29,7 +29,7 @@ export const sendMessage = TryCatch(async (req, res) => {
     await chat.save();
   }
 
-  const newMessage = new Messages({
+  const newMessage = new Message({
     chatId: chat._id,
     sender: senderId,
     text: message,
@@ -66,7 +66,7 @@ export const getAllMessages = TryCatch(async (req, res) => {
       message: "No Chat with these users",
     });
 
-  const messages = await Messages.find({
+  const messages = await Message.find({
     chatId: chat._id,
   });
 
