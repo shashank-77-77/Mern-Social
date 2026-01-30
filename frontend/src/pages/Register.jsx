@@ -1,20 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserData } from "../context/UserContext";
 import { PostData } from "../context/PostContext";
+import toast from "react-hot-toast";
+import {
+  FaFacebookF,
+  FaInstagram,
+  FaTwitter,
+  FaLinkedin
+} from "react-icons/fa";
 
-/* =========================================================
-   REGISTER
-   ========================================================= */
 const Register = () => {
   const navigate = useNavigate();
-
   const { registerUser, loading } = UserData();
   const { fetchPosts } = PostData();
 
-  /* =========================================================
-     FORM STATE
-     ========================================================= */
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,136 +22,106 @@ const Register = () => {
   const [file, setFile] = useState(null);
   const [filePrev, setFilePrev] = useState(null);
 
-  /* =========================================================
-     FILE HANDLER (PREVIEW)
-     ========================================================= */
+  /* ===============================
+     PARALLAX EFFECT
+     =============================== */
+  useEffect(() => {
+    const move = (e) => {
+      document.documentElement.style.setProperty(
+        "--x",
+        `${(e.clientX - window.innerWidth / 2) / 40}px`
+      );
+      document.documentElement.style.setProperty(
+        "--y",
+        `${(e.clientY - window.innerHeight / 2) / 40}px`
+      );
+    };
+    window.addEventListener("mousemove", move);
+    return () => window.removeEventListener("mousemove", move);
+  }, []);
+
   const changeFileHandler = (e) => {
-    const selected = e.target.files[0];
-    if (!selected) return;
-
-    setFile(selected);
-
-    const reader = new FileReader();
-    reader.readAsDataURL(selected);
-    reader.onloadend = () => setFilePrev(reader.result);
+    const f = e.target.files[0];
+    if (!f) return;
+    setFile(f);
+    const r = new FileReader();
+    r.onloadend = () => setFilePrev(r.result);
+    r.readAsDataURL(f);
   };
 
-  /* =========================================================
-     SUBMIT
-     ========================================================= */
   const submitHandler = (e) => {
     e.preventDefault();
-
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("email", email);
-    formData.append("password", password);
-    formData.append("gender", gender);
-    formData.append("file", file);
-
-    registerUser(formData, navigate, fetchPosts);
+    if (password.length < 7 || password.length > 10) {
+      toast.error("Password must be 7–10 characters");
+      return;
+    }
+    const fd = new FormData();
+    fd.append("name", name);
+    fd.append("email", email);
+    fd.append("password", password);
+    fd.append("gender", gender);
+    fd.append("file", file);
+    registerUser(fd, navigate, fetchPosts);
   };
 
-  /* =========================================================
-     RENDER
-     ========================================================= */
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-500">Creating your account…</p>
+      <div className="min-h-screen flex items-center justify-center text-gray-400">
+        Creating your account…
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center min-h-screen bg-[var(--bg-main)]">
-      <div className="flex flex-col md:flex-row card max-w-5xl w-[92%] md:mt-12 overflow-hidden">
-        {/* Left / Form */}
-        <div className="flex-1 p-6">
-          <h1 className="text-2xl md:text-3xl font-semibold text-center mb-6">
-            Register to Social Media
-          </h1>
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Parallax */}
+      <div className="parallax" />
 
-          <form onSubmit={submitHandler}>
-            <div className="flex flex-col items-center gap-4">
-              {/* Avatar Preview */}
-              {filePrev && (
-                <img
-                  src={filePrev}
-                  alt="Preview"
-                  className="w-32 h-32 rounded-full object-cover"
-                />
-              )}
+      {/* Floating Icons */}
+      <div className="floating-icons">
+        <FaFacebookF className="floating-icon text-blue-500 text-5xl" style={{ left: "10%", animationDelay: "0s" }} />
+        <FaInstagram className="floating-icon text-pink-500 text-5xl" style={{ left: "30%", animationDelay: "5s" }} />
+        <FaTwitter className="floating-icon text-sky-400 text-5xl" style={{ left: "60%", animationDelay: "10s" }} />
+        <FaLinkedin className="floating-icon text-blue-400 text-5xl" style={{ left: "80%", animationDelay: "15s" }} />
+      </div>
 
-              {/* Inputs */}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={changeFileHandler}
-                className="custom-input"
-                required
-              />
+      {/* CARD */}
+      <div className="glass w-full max-w-md p-8 relative z-10">
+        <h1 className="text-3xl font-bold text-center mb-2">
+          Join the Network 🚀
+        </h1>
+        <p className="text-center text-gray-400 mb-6">
+          Create, connect & grow with your community
+        </p>
 
-              <input
-                type="text"
-                placeholder="Username"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="custom-input"
-                required
-              />
+        <form onSubmit={submitHandler} className="space-y-4">
+          {filePrev && (
+            <img
+              src={filePrev}
+              alt="preview"
+              className="w-24 h-24 rounded-full mx-auto object-cover border border-cyan-400"
+            />
+          )}
 
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="custom-input"
-                required
-              />
+          <input type="file" onChange={changeFileHandler} className="custom-input" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Username" className="custom-input" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="custom-input" />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="custom-input" />
 
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="custom-input"
-                required
-              />
+          <select value={gender} onChange={(e) => setGender(e.target.value)} className="custom-input">
+            <option value="">Select gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
 
-              <select
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-                className="custom-input"
-                required
-              >
-                <option value="">Select Gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
+          <button className="auth-btn">Create Account</button>
+        </form>
 
-              {/* Submit */}
-              <button type="submit" className="auth-btn">
-                Register
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Right / CTA */}
-        <div className="flex items-center justify-center md:w-1/3 bg-gradient-to-br from-blue-500 to-cyan-400 text-white p-6">
-          <div className="text-center space-y-3">
-            <h2 className="text-3xl font-semibold">
-              Already have an account?
-            </h2>
-            <p>Login and continue your journey</p>
-            <Link
-              to="/login"
-              className="inline-block bg-white text-blue-500 px-5 py-1 rounded-full font-medium"
-            >
-              Login
-            </Link>
-          </div>
+        <div className="text-center mt-6 text-sm text-gray-400">
+          Already inside the circle?
+          <Link to="/login" className="text-cyan-400 font-semibold ml-1">
+            Login →
+          </Link>
         </div>
       </div>
     </div>
