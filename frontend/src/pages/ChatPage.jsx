@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import { FaSearch } from "react-icons/fa";
 
 import { ChatData } from "../context/ChatContext";
@@ -7,10 +6,8 @@ import { SocketData } from "../context/SocketContext";
 
 import Chat from "../components/chat/Chat";
 import MessageContainer from "../components/chat/MessageContainer";
+import api from "../utils/axios";
 
-/* =========================================================
-   CHAT PAGE
-   ========================================================= */
 const ChatPage = ({ user }) => {
   const {
     createChat,
@@ -27,25 +24,20 @@ const ChatPage = ({ user }) => {
   const [searchMode, setSearchMode] = useState(false);
   const [searching, setSearching] = useState(false);
 
-  /* =========================================================
-     FETCH CHATS (ON LOAD)
-     ========================================================= */
+  /* ===============================
+     FETCH CHATS
+     =============================== */
   useEffect(() => {
-    const getAllChats = async () => {
-      try {
-        const { data } = await axios.get("/api/messages/chats");
-        setChats(data || []);
-      } catch (error) {
-        console.error("Failed to fetch chats", error);
-      }
+    const loadChats = async () => {
+      const { data } = await api.get("/messages/chats");
+      setChats(data || []);
     };
-
-    getAllChats();
+    loadChats();
   }, [setChats]);
 
-  /* =========================================================
-     SEARCH USERS (DEBOUNCED)
-     ========================================================= */
+  /* ===============================
+     SEARCH USERS
+     =============================== */
   const canSearch = useMemo(
     () => query.trim().length > 0 && searchMode,
     [query, searchMode]
@@ -60,45 +52,49 @@ const ChatPage = ({ user }) => {
     const t = setTimeout(async () => {
       try {
         setSearching(true);
-        const { data } = await axios.get(
-          `/api/user/all?search=${encodeURIComponent(query)}`
+        const { data } = await api.get(
+          `/user/all?search=${encodeURIComponent(query)}`
         );
         setUsers(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("User search failed", error);
-        setUsers([]);
       } finally {
         setSearching(false);
       }
-    }, 350);
+    }, 300);
 
     return () => clearTimeout(t);
   }, [canSearch, query]);
 
-  /* =========================================================
-     CREATE CHAT
-     ========================================================= */
-  const createNewChat = async (id) => {
+  /* ===============================
+     CREATE CHAT + AUTO SELECT
+     =============================== */
+  const createNewChat = async (userId) => {
     try {
-      await createChat(id);
+      await createChat(userId);
+
+      const { data } = await api.get("/messages/chats");
+      setChats(data || []);
+
+      // ✅ FIX: auto-open the correct chat
+      const chatToOpen = data.find((c) =>
+        c.users.some((u) => u._id === userId)
+      );
+
+      if (chatToOpen) {
+        setSelectedChat(chatToOpen);
+      }
+
       setSearchMode(false);
       setQuery("");
-      const { data } = await axios.get("/api/messages/chats");
-      setChats(data || []);
-    } catch (error) {
-      console.error("Failed to create chat", error);
+    } catch (err) {
+      console.error("Create chat failed", err);
     }
   };
 
-  /* =========================================================
-     RENDER
-     ========================================================= */
   return (
     <div className="min-h-screen bg-[var(--bg-main)] pb-16">
       <div className="feed flex gap-4">
-        {/* LEFT: CHAT LIST / SEARCH */}
+        {/* LEFT */}
         <div className="w-full md:w-[30%] card p-3">
-          {/* Top Controls */}
           <div className="flex items-center gap-2 mb-3">
             <button
               onClick={() => {
@@ -112,73 +108,65 @@ const ChatPage = ({ user }) => {
 
             {searchMode && (
               <input
-                type="text"
-                placeholder="Search users"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search users"
                 className="custom-input flex-1"
               />
             )}
           </div>
 
-          {/* Content */}
           {searchMode ? (
             <div className="space-y-2">
               {searching ? (
-                <p className="text-sm text-gray-500 text-center">
+                <p className="text-sm text-center text-gray-500">
                   Searching…
                 </p>
-              ) : users.length > 0 ? (
+              ) : users.length ? (
                 users.map((u) => (
                   <div
                     key={u._id}
                     onClick={() => createNewChat(u._id)}
-                    className="
-                      flex items-center gap-3
-                      px-3 py-2
-                      rounded-xl
-                      cursor-pointer
-                      hover:bg-gray-100
-                      transition
-                    "
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-gray-100"
                   >
                     <img
                       src={u.profilePic.url}
                       alt={u.name}
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="w-8 h-8 rounded-full"
                     />
-                    <span className="font-medium truncate">
-                      {u.name}
-                    </span>
+                    <span className="truncate">{u.name}</span>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500 text-center">
+                <p className="text-sm text-center text-gray-500">
                   No users found
                 </p>
               )}
             </div>
           ) : (
             <div className="space-y-2">
-              {chats.length > 0 ? (
-                chats.map((c) => (
+              {chats.map((c) => {
+                const otherUser = c.users.find(
+                  (u) => u._id !== user._id
+                );
+
+                return (
                   <Chat
                     key={c._id}
                     chat={c}
                     setSelectedChat={setSelectedChat}
-                    isOnline={onlineUsers.includes(c.users[0]._id)}
+                    isOnline={
+                      otherUser &&
+                      onlineUsers.includes(otherUser._id)
+                    }
                   />
-                ))
-              ) : (
-                <p className="text-sm text-gray-500 text-center">
-                  No chats yet
-                </p>
-              )}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* RIGHT: MESSAGE AREA */}
+        {/* RIGHT */}
         <div className="hidden md:block md:w-[70%] card p-0">
           {selectedChat ? (
             <MessageContainer
@@ -186,7 +174,7 @@ const ChatPage = ({ user }) => {
               setChats={setChats}
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500 text-lg">
+            <div className="flex items-center justify-center h-full text-gray-500">
               Hello 👋 {user.name}, select a chat to start messaging
             </div>
           )}
