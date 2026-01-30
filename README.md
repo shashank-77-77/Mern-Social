@@ -1,6 +1,6 @@
 
 # MERN Social Media App with .NET AI Integration
-  🌐 Render Live Deployment:  https://mern-social-4-ufh7.onrender.com/chat
+  🌐 Render Live Deployment: https://mern-social-4-ufh7.onrender.com/login
     
 A full-stack social media platform featuring a React frontend, Node.js backend, and a specialized .NET AI service, all containerized with Docker and deployed on AWS EC2.
 
