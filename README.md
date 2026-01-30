@@ -17,7 +17,7 @@ This project uses a microservices-style architecture managed by an Nginx reverse
 * **Frontend:** React.js, Tailwind CSS, Axios, Socket.io-client.
 * **Backend:** Node.js, Express, Mongoose, Socket.io.
 * **AI Service:** C# / .NET 8.
-* **Infrastructure:** Docker, Docker Compose, AWS EC2, Nginx.
+* **Infrastructure:** Docker, Docker Compose, AWS EC2
 
 ## 📋 Prerequisites
 * Docker and Docker Compose installed.
