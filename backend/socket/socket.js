@@ -1,38 +1,87 @@
-import { Server } from "socket.io";
-import http from "http";
 import express from "express";
+import http from "http";
+import { Server } from "socket.io";
 
-const app = express();
+export const app = express();
 
-const server = http.createServer(app);
+/* ======================================================
+   HTTP SERVER
+====================================================== */
+export const server = http.createServer(app);
 
-const io = new Server(server, {
+/* ======================================================
+   SOCKET.IO
+====================================================== */
+export const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173"],
+    origin: "http://localhost:5173",
     credentials: true,
   },
 });
 
-export const getReciverSocketId = (reciverId) => {
-  return userSocketMap[reciverId];
+/* ======================================================
+   ONLINE USER MAP (SOURCE OF TRUTH)
+====================================================== */
+const onlineUsers = new Map();
+
+/* ======================================================
+   HELPERS (USED BY CONTROLLERS)
+====================================================== */
+export const getReciverSocketId = (userId) => {
+  return onlineUsers.get(userId);
 };
 
-const userSocketMap = {};
-
+/* ======================================================
+   SOCKET EVENTS
+====================================================== */
 io.on("connection", (socket) => {
-  console.log("User Connected", socket.id);
+  console.log("🟢 Socket connected:", socket.id);
 
-  const userId = socket.handshake.query.userId;
+  /* ===============================
+     USER CONNECT
+     =============================== */
+  socket.on("addUser", (userId) => {
+    onlineUsers.set(userId, socket.id);
+    io.emit("onlineUsers", Array.from(onlineUsers.keys()));
+  });
 
-  if (userId != "undefined") userSocketMap[userId] = socket.id;
+  /* ===============================
+     JOIN CHAT ROOM
+     =============================== */
+  socket.on("joinChat", (chatId) => {
+    socket.join(chatId);
+  });
 
-  io.emit("getOnlineUser", Object.keys(userSocketMap)); //[1,2,3,4]
+  /* ===============================
+     TYPING INDICATOR
+     =============================== */
+  socket.on("typing", ({ chatId }) => {
+    socket.to(chatId).emit("typing");
+  });
 
+  socket.on("stopTyping", ({ chatId }) => {
+    socket.to(chatId).emit("stopTyping");
+  });
+
+  /* ===============================
+     MESSAGE SEEN
+     =============================== */
+  socket.on("messageSeen", ({ chatId }) => {
+    socket.to(chatId).emit("messageSeen", { chatId });
+  });
+
+  /* ===============================
+     DISCONNECT
+     =============================== */
   socket.on("disconnect", () => {
-    console.log("User disconnected");
-    delete userSocketMap[userId];
-    io.emit("getOnlineUser", Object.keys(userSocketMap));
+    for (const [userId, socketId] of onlineUsers.entries()) {
+      if (socketId === socket.id) {
+        onlineUsers.delete(userId);
+        break;
+      }
+    }
+
+    io.emit("onlineUsers", Array.from(onlineUsers.keys()));
+    console.log("🔴 Socket disconnected:", socket.id);
   });
 });
-
-export { io, server, app };
