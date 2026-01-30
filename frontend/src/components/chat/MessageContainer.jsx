@@ -1,22 +1,31 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import axios from "axios";
+
 import { UserData } from "../../context/UserContext";
 import { SocketData } from "../../context/SocketContext";
 import { LoadingAnimation } from "../Loading";
 import Message from "./Message";
 import MessageInput from "./MessageInput";
 
+/* =========================================================
+   MESSAGE CONTAINER
+   - typing indicator
+   - seen ticks (safe, incremental)
+========================================================= */
+
 const MessageContainer = ({ selectedChat, setChats }) => {
   const { user } = UserData();
-  const { socket } = SocketData();
+  const { socket, typingChats } = SocketData();
 
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const scrollRef = useRef(null);
 
-  /* =========================================================
-     STABLE DERIVED STATE — OTHER USER (SINGLE SOURCE OF TRUTH)
-     ========================================================= */
+  const scrollRef = useRef(null);
+  const seenEmittedRef = useRef(false);
+
+  /* ===============================
+     OTHER USER (STABLE)
+     =============================== */
   const otherUser = useMemo(() => {
     if (!selectedChat || !user) return null;
     return selectedChat.users.find(
@@ -24,13 +33,14 @@ const MessageContainer = ({ selectedChat, setChats }) => {
     );
   }, [selectedChat, user]);
 
-  /* =========================================================
-     FETCH MESSAGES (SAFE + GUARDED)
-     ========================================================= */
+  /* ===============================
+     FETCH MESSAGES
+     =============================== */
   useEffect(() => {
     if (!otherUser || !selectedChat) return;
 
-    let isActive = true; // prevents race conditions
+    let active = true;
+    seenEmittedRef.current = false;
 
     const fetchMessages = async () => {
       try {
@@ -39,33 +49,66 @@ const MessageContainer = ({ selectedChat, setChats }) => {
           `/api/messages/${otherUser._id}`
         );
 
-        if (isActive) {
-          setMessages(data || []);
-        }
+        if (!active) return;
+
+        // mark incoming messages as seen locally
+        const normalized = (data || []).map((m) => ({
+          ...m,
+          seen:
+            m.sender !== user._id &&
+            m.sender?._id !== user._id
+              ? true
+              : m.seen,
+        }));
+
+        setMessages(normalized);
       } catch (err) {
-        console.error("Failed to fetch messages", err);
+        console.error("Fetch messages failed", err);
       } finally {
-        if (isActive) setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
     fetchMessages();
+    return () => (active = false);
+  }, [otherUser, selectedChat, user._id]);
 
-    return () => {
-      isActive = false;
-    };
-  }, [otherUser, selectedChat]);
+  /* ===============================
+     JOIN CHAT ROOM
+     =============================== */
+  useEffect(() => {
+    if (socket && selectedChat?._id) {
+      socket.emit("joinChat", selectedChat._id);
+    }
+  }, [socket, selectedChat?._id]);
 
-  /* =========================================================
-     SOCKET: NEW MESSAGE HANDLING (CHAT-SCOPED)
-     ========================================================= */
+  /* ===============================
+     EMIT SEEN (ON OPEN)
+     =============================== */
+  useEffect(() => {
+    if (!socket || !selectedChat?._id) return;
+    if (seenEmittedRef.current) return;
+
+    socket.emit("messageSeen", {
+      chatId: selectedChat._id,
+    });
+
+    seenEmittedRef.current = true;
+  }, [socket, selectedChat?._id]);
+
+  /* ===============================
+     SOCKET: RECEIVE MESSAGE
+     =============================== */
   useEffect(() => {
     if (!socket || !selectedChat) return;
 
     const handler = (message) => {
       if (message.chatId !== selectedChat._id) return;
 
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => [
+        ...prev,
+        { ...message, seen: false },
+      ]);
 
       setChats((prev) =>
         prev.map((c) =>
@@ -86,16 +129,39 @@ const MessageContainer = ({ selectedChat, setChats }) => {
     return () => socket.off("newMessage", handler);
   }, [socket, selectedChat, setChats]);
 
-  /* =========================================================
+  /* ===============================
+     SOCKET: MESSAGE SEEN
+     =============================== */
+  useEffect(() => {
+    if (!socket || !selectedChat) return;
+
+    const handler = ({ chatId }) => {
+      if (chatId !== selectedChat._id) return;
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.sender === user._id ||
+          m.sender?._id === user._id
+            ? { ...m, seen: true }
+            : m
+        )
+      );
+    };
+
+    socket.on("messageSeen", handler);
+    return () => socket.off("messageSeen", handler);
+  }, [socket, selectedChat, user._id]);
+
+  /* ===============================
      AUTO SCROLL
-     ========================================================= */
+     =============================== */
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, typingChats[selectedChat?._id]]);
 
-  /* =========================================================
-     GUARD — CHAT NOT READY
-     ========================================================= */
+  /* ===============================
+     GUARD
+     =============================== */
   if (!selectedChat || !otherUser) {
     return (
       <div className="flex items-center justify-center h-full text-gray-400">
@@ -104,9 +170,9 @@ const MessageContainer = ({ selectedChat, setChats }) => {
     );
   }
 
-  /* =========================================================
+  /* ===============================
      RENDER
-     ========================================================= */
+     =============================== */
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm">
       {/* Header */}
@@ -133,6 +199,7 @@ const MessageContainer = ({ selectedChat, setChats }) => {
               <Message
                 key={msg._id}
                 message={msg.text}
+                seen={msg.seen}
                 ownMessage={
                   msg.sender === user._id ||
                   msg.sender?._id === user._id
@@ -144,6 +211,14 @@ const MessageContainer = ({ selectedChat, setChats }) => {
               No messages yet. Say hi 👋
             </div>
           )}
+
+          {/* Typing Indicator */}
+          {typingChats[selectedChat._id] && (
+            <div className="text-sm text-gray-400 italic ml-2">
+              {otherUser.name} is typing…
+            </div>
+          )}
+
           <div ref={scrollRef} />
         </div>
       )}

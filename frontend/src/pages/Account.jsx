@@ -12,9 +12,15 @@ import { Loading } from "../components/Loading";
 
 import { FaArrowDownLong, FaArrowUp } from "react-icons/fa6";
 import { CiEdit } from "react-icons/ci";
+import {
+  FaFacebookF,
+  FaInstagram,
+  FaTwitter,
+  FaLinkedin,
+} from "react-icons/fa";
 
 /* =========================================================
-   ACCOUNT (LOGGED-IN USER PROFILE)
+   ACCOUNT (ENHANCED UI – SAFE)
    ========================================================= */
 const Account = ({ user }) => {
   const navigate = useNavigate();
@@ -27,9 +33,27 @@ const Account = ({ user }) => {
 
   const { posts = [], reels = [], loading } = PostData();
 
-  /* =========================================================
-     LOCAL STATE
-     ========================================================= */
+  /* ===============================
+     PARALLAX EFFECT
+     =============================== */
+  useEffect(() => {
+    const move = (e) => {
+      document.documentElement.style.setProperty(
+        "--x",
+        `${(e.clientX - window.innerWidth / 2) / 60}px`
+      );
+      document.documentElement.style.setProperty(
+        "--y",
+        `${(e.clientY - window.innerHeight / 2) / 60}px`
+      );
+    };
+    window.addEventListener("mousemove", move);
+    return () => window.removeEventListener("mousemove", move);
+  }, []);
+
+  /* ===============================
+     STATE (UNCHANGED)
+     =============================== */
   const [tab, setTab] = useState("post");
   const [reelIndex, setReelIndex] = useState(0);
 
@@ -40,7 +64,6 @@ const Account = ({ user }) => {
   const [followingsData, setFollowingsData] = useState([]);
 
   const [file, setFile] = useState(null);
-
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(user?.name || "");
 
@@ -48,9 +71,9 @@ const Account = ({ user }) => {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
-  /* =========================================================
+  /* ===============================
      DERIVED DATA
-     ========================================================= */
+     =============================== */
   const myPosts = useMemo(
     () => posts.filter((p) => p.owner?._id === user?._id),
     [posts, user]
@@ -61,37 +84,26 @@ const Account = ({ user }) => {
     [reels, user]
   );
 
-  /* =========================================================
-     FOLLOW DATA (MODALS)
-     ========================================================= */
+  /* ===============================
+     FOLLOW DATA
+     =============================== */
   useEffect(() => {
     if (!user?._id) return;
 
-    const fetchFollowData = async () => {
-      try {
-        const { data } = await axios.get(
-          `/api/user/followdata/${user._id}`
-        );
+    axios
+      .get(`/api/user/followdata/${user._id}`)
+      .then(({ data }) => {
         setFollowersData(data.followers || []);
         setFollowingsData(data.followings || []);
-      } catch (error) {
-        console.error("Failed to fetch follow data", error);
-      }
-    };
-
-    fetchFollowData();
+      })
+      .catch(() => {});
   }, [user]);
 
-  /* =========================================================
-     HANDLERS
-     ========================================================= */
-  const logoutHandler = () => {
-    logoutUser(navigate);
-  };
-
-  const changeFileHandler = (e) => {
-    setFile(e.target.files[0]);
-  };
+  /* ===============================
+     HANDLERS (UNCHANGED)
+     =============================== */
+  const logoutHandler = () => logoutUser(navigate);
+  const changeFileHandler = (e) => setFile(e.target.files[0]);
 
   const changeImageHandler = () => {
     if (!file) return;
@@ -112,7 +124,6 @@ const Account = ({ user }) => {
         oldPassword,
         newPassword,
       });
-
       toast.success(data.message);
       setOldPassword("");
       setNewPassword("");
@@ -124,248 +135,199 @@ const Account = ({ user }) => {
     }
   };
 
-  const prevReel = () =>
-    setReelIndex((i) => (i > 0 ? i - 1 : i));
-
+  const prevReel = () => setReelIndex((i) => (i > 0 ? i - 1 : i));
   const nextReel = () =>
     setReelIndex((i) =>
       i < myReels.length - 1 ? i + 1 : i
     );
 
-  /* =========================================================
+  /* ===============================
      GUARD
-     ========================================================= */
+     =============================== */
   if (loading) return <Loading />;
-
-  if (!user) {
+  if (!user)
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-500">User not found</p>
+      <div className="min-h-screen flex items-center justify-center text-gray-400">
+        User not found
       </div>
     );
-  }
 
-  /* =========================================================
+  /* ===============================
      RENDER
-     ========================================================= */
+     =============================== */
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] pb-16">
-      {/* Modals */}
-      {showFollowers && (
-        <Modal
-          value={followersData}
-          title="Followers"
-          setShow={setShowFollowers}
-        />
-      )}
-      {showFollowings && (
-        <Modal
-          value={followingsData}
-          title="Followings"
-          setShow={setShowFollowings}
-        />
-      )}
+    <div className="relative min-h-screen overflow-hidden pb-24">
+      {/* Parallax */}
+      <div className="parallax" />
 
-      <div className="feed">
-        {/* Profile Card */}
-        <div className="card p-6 flex gap-6 mb-4">
-          {/* Avatar */}
-          <div className="flex flex-col gap-3">
-            <img
-              src={user.profilePic.url}
-              alt={user.name}
-              className="w-28 h-28 rounded-full object-cover"
-            />
+      {/* Floating Icons */}
+      <div className="floating-icons">
+        <FaFacebookF className="floating-icon text-blue-500 text-4xl" style={{ left: "10%" }} />
+        <FaInstagram className="floating-icon text-pink-500 text-4xl" style={{ left: "30%", animationDelay: "6s" }} />
+        <FaTwitter className="floating-icon text-sky-400 text-4xl" style={{ left: "60%", animationDelay: "12s" }} />
+        <FaLinkedin className="floating-icon text-blue-400 text-4xl" style={{ left: "85%", animationDelay: "18s" }} />
+      </div>
 
-            <input type="file" onChange={changeFileHandler} />
-            <button
-              onClick={changeImageHandler}
-              className="btn-primary text-sm"
-            >
-              Update Profile
-            </button>
-          </div>
-
-          {/* Info */}
-          <div className="flex flex-col gap-2 flex-1">
-            {/* Name */}
-            {editingName ? (
-              <div className="flex items-center gap-2">
-                <input
-                  className="custom-input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-                <button
-                  onClick={updateNameHandler}
-                  className="btn-primary text-sm"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => setEditingName(false)}
-                  className="text-sm text-gray-500"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <h2 className="font-semibold text-lg">
-                  {user.name}
-                </h2>
-                <button onClick={() => setEditingName(true)}>
-                  <CiEdit />
-                </button>
-              </div>
-            )}
-
-            <p className="text-sm text-gray-500">
-              {user.email}
-            </p>
-            <p className="text-sm text-gray-500">
-              {user.gender}
-            </p>
-
-            <div className="flex gap-4 text-sm">
-              <button
-                onClick={() => setShowFollowers(true)}
-                className="hover:underline"
-              >
-                {user.followers.length} followers
-              </button>
-              <button
-                onClick={() => setShowFollowings(true)}
-                className="hover:underline"
-              >
-                {user.followings.length} following
+      {/* CONTENT */}
+      <div className="relative z-10 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto space-y-6">
+          {/* PROFILE CARD */}
+          <div className="glass p-6 flex flex-col md:flex-row gap-6">
+            {/* Avatar */}
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src={user.profilePic.url}
+                alt={user.name}
+                className="w-28 h-28 rounded-full object-cover ring-4 ring-cyan-400"
+              />
+              <input type="file" onChange={changeFileHandler} />
+              <button onClick={changeImageHandler} className="btn-primary text-sm">
+                Update Profile
               </button>
             </div>
 
-            <button
-              onClick={logoutHandler}
-              className="bg-red-500 text-white rounded-md px-4 py-2 mt-2"
-            >
-              Logout
-            </button>
+            {/* Info */}
+            <div className="flex-1 space-y-3">
+              {editingName ? (
+                <div className="flex gap-2">
+                  <input
+                    className="custom-input flex-1"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                  <button onClick={updateNameHandler} className="btn-primary text-sm">
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingName(false)}
+                    className="text-sm text-gray-400"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-semibold">{user.name}</h2>
+                  <button onClick={() => setEditingName(true)}>
+                    <CiEdit />
+                  </button>
+                </div>
+              )}
+
+              <p className="text-sm text-gray-400">{user.email}</p>
+              <p className="text-sm text-gray-400 capitalize">{user.gender}</p>
+
+              <div className="flex gap-4 text-sm">
+                <button onClick={() => setShowFollowers(true)} className="hover:underline">
+                  {user.followers.length} followers
+                </button>
+                <button onClick={() => setShowFollowings(true)} className="hover:underline">
+                  {user.followings.length} following
+                </button>
+              </div>
+
+              <button
+                onClick={logoutHandler}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
+              >
+                Logout
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Password Update */}
-        <button
-          onClick={() => setShowPasswordForm((p) => !p)}
-          className="btn-primary mb-4"
-        >
-          {showPasswordForm ? "Cancel" : "Update Password"}
-        </button>
-
-        {showPasswordForm && (
-          <form
-            onSubmit={updatePassword}
-            className="card p-4 mb-4 flex flex-col gap-3"
-          >
-            <input
-              type="password"
-              className="custom-input"
-              placeholder="Old password"
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-              required
-            />
-            <input
-              type="password"
-              className="custom-input"
-              placeholder="New password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-            />
-            <button type="submit" className="btn-primary">
-              Save Password
-            </button>
-          </form>
-        )}
-
-        {/* Tabs */}
-        <div className="card p-3 flex justify-center gap-8 mb-4">
-          <button
-            onClick={() => setTab("post")}
-            className={
-              tab === "post"
-                ? "font-semibold"
-                : "text-gray-500"
-            }
-          >
-            Posts
+          {/* PASSWORD */}
+          <button onClick={() => setShowPasswordForm((p) => !p)} className="btn-primary">
+            {showPasswordForm ? "Cancel" : "Update Password"}
           </button>
-          <button
-            onClick={() => setTab("reel")}
-            className={
-              tab === "reel"
-                ? "font-semibold"
-                : "text-gray-500"
-            }
-          >
-            Reels
-          </button>
-        </div>
 
-        {/* Content */}
-        {tab === "post" && (
-          <>
-            {myPosts.length > 0 ? (
+          {showPasswordForm && (
+            <form onSubmit={updatePassword} className="glass p-4 space-y-3">
+              <input
+                type="password"
+                className="custom-input"
+                placeholder="Old password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                required
+              />
+              <input
+                type="password"
+                className="custom-input"
+                placeholder="New password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+              <button type="submit" className="btn-primary">
+                Save Password
+              </button>
+            </form>
+          )}
+
+          {/* TABS */}
+          <div className="glass p-3 flex justify-center gap-8">
+            {["post", "reel"].map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`font-semibold ${
+                  tab === t ? "text-cyan-400" : "text-gray-400"
+                }`}
+              >
+                {t === "post" ? "Posts" : "Reels"}
+              </button>
+            ))}
+          </div>
+
+          {/* CONTENT */}
+          {tab === "post" &&
+            (myPosts.length ? (
               myPosts.map((p) => (
-                <PostCard
-                  key={p._id}
-                  value={p}
-                  type="post"
-                />
+                <PostCard key={p._id} value={p} type="post" />
               ))
             ) : (
-              <div className="card p-6 text-center">
+              <div className="glass p-6 text-center text-gray-400">
                 No posts yet
               </div>
-            )}
-          </>
-        )}
+            ))}
 
-        {tab === "reel" && (
-          <>
-            {myReels.length > 0 ? (
-              <div className="flex items-center gap-4 justify-center">
+          {tab === "reel" &&
+            (myReels.length ? (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                 <PostCard
                   value={myReels[reelIndex]}
                   type="reel"
                   key={myReels[reelIndex]._id}
                 />
 
-                <div className="flex flex-col gap-4">
+                <div className="flex sm:flex-col gap-4">
                   {reelIndex > 0 && (
-                    <button
-                      onClick={prevReel}
-                      className="btn-primary rounded-full p-4"
-                    >
+                    <button onClick={prevReel} className="btn-primary rounded-full p-3">
                       <FaArrowUp />
                     </button>
                   )}
                   {reelIndex < myReels.length - 1 && (
-                    <button
-                      onClick={nextReel}
-                      className="btn-primary rounded-full p-4"
-                    >
+                    <button onClick={nextReel} className="btn-primary rounded-full p-3">
                       <FaArrowDownLong />
                     </button>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="card p-6 text-center">
+              <div className="glass p-6 text-center text-gray-400">
                 No reels yet
               </div>
-            )}
-          </>
-        )}
+            ))}
+        </div>
       </div>
+
+      {/* Modals */}
+      {showFollowers && (
+        <Modal value={followersData} title="Followers" setShow={setShowFollowers} />
+      )}
+      {showFollowings && (
+        <Modal value={followingsData} title="Followings" setShow={setShowFollowings} />
+      )}
     </div>
   );
 };

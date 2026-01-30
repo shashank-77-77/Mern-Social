@@ -19,6 +19,15 @@ export const registerUser = TryCatch(async (req, res) => {
   }
 
   const fileUrl = getDataUrl(file);
+
+
+  if (password.length < 7 || password.length > 10) {
+  return res.status(400).json({
+    message: "Password must be between 7 and 10 characters",
+  });
+}
+
+
   const hashPassword = await bcrypt.hash(password, 10);
   const myCloud = await cloudinary.v2.uploader.upload(fileUrl.content);
 
