@@ -64,14 +64,8 @@ export const getAllMessages = TryCatch(async (req, res) => {
     return res.status(404).json({ message: "No chat found" });
   }
 
-<<<<<<< Updated upstream
-  const messages = await Message.find({
-    chatId: chat._id,
-  });
-=======
   const messages = await Message.find({ chatId: chat._id })
     .populate("sender", "name profilePic");
->>>>>>> Stashed changes
 
   res.json(messages);
 });
