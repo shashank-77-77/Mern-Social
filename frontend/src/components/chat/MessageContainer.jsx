@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import axios from "axios";
 import { UserData } from "../../context/UserContext";
 import { SocketData } from "../../context/SocketContext";
@@ -6,87 +6,99 @@ import { LoadingAnimation } from "../Loading";
 import Message from "./Message";
 import MessageInput from "./MessageInput";
 
-/* =========================================================
-   MESSAGE CONTAINER (CHAT THREAD)
-   ========================================================= */
 const MessageContainer = ({ selectedChat, setChats }) => {
   const { user } = UserData();
   const { socket } = SocketData();
 
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const scrollRef = useRef(null);
 
   /* =========================================================
-     FETCH MESSAGES ON CHAT CHANGE
+     STABLE DERIVED STATE — OTHER USER (SINGLE SOURCE OF TRUTH)
+     ========================================================= */
+  const otherUser = useMemo(() => {
+    if (!selectedChat || !user) return null;
+    return selectedChat.users.find(
+      (u) => u._id !== user._id
+    );
+  }, [selectedChat, user]);
+
+  /* =========================================================
+     FETCH MESSAGES (SAFE + GUARDED)
      ========================================================= */
   useEffect(() => {
-    if (!selectedChat) return;
+    if (!otherUser || !selectedChat) return;
+
+    let isActive = true; // prevents race conditions
 
     const fetchMessages = async () => {
       try {
         setLoading(true);
         const { data } = await axios.get(
-          `/api/messages/${selectedChat.users[0]._id}`
+          `/api/messages/${otherUser._id}`
         );
-        setMessages(data || []);
-      } catch (error) {
-        console.error("Failed to fetch messages", error);
+
+        if (isActive) {
+          setMessages(data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch messages", err);
       } finally {
-        setLoading(false);
+        if (isActive) setLoading(false);
       }
     };
 
     fetchMessages();
-  }, [selectedChat]);
+
+    return () => {
+      isActive = false;
+    };
+  }, [otherUser, selectedChat]);
 
   /* =========================================================
-     SOCKET: RECEIVE NEW MESSAGE
+     SOCKET: NEW MESSAGE HANDLING (CHAT-SCOPED)
      ========================================================= */
   useEffect(() => {
     if (!socket || !selectedChat) return;
 
-    const handleNewMessage = (message) => {
-      // Push message only if it belongs to current chat
-      if (message.chatId === selectedChat._id) {
-        setMessages((prev) => [...prev, message]);
-      }
+    const handler = (message) => {
+      if (message.chatId !== selectedChat._id) return;
 
-      // Update chat list latest message
+      setMessages((prev) => [...prev, message]);
+
       setChats((prev) =>
-        prev.map((chat) =>
-          chat._id === message.chatId
+        prev.map((c) =>
+          c._id === message.chatId
             ? {
-                ...chat,
+                ...c,
                 latestMessage: {
                   text: message.text,
                   sender: message.sender,
                 },
               }
-            : chat
+            : c
         )
       );
     };
 
-    socket.on("newMessage", handleNewMessage);
-
-    return () => socket.off("newMessage", handleNewMessage);
+    socket.on("newMessage", handler);
+    return () => socket.off("newMessage", handler);
   }, [socket, selectedChat, setChats]);
 
   /* =========================================================
-     AUTO SCROLL TO BOTTOM
+     AUTO SCROLL
      ========================================================= */
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   /* =========================================================
-     GUARD
+     GUARD — CHAT NOT READY
      ========================================================= */
-  if (!selectedChat) {
+  if (!selectedChat || !otherUser) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+      <div className="flex items-center justify-center h-full text-gray-400">
         Select a chat to start messaging
       </div>
     );
@@ -96,16 +108,16 @@ const MessageContainer = ({ selectedChat, setChats }) => {
      RENDER
      ========================================================= */
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b bg-white">
+      <div className="flex items-center gap-3 px-4 py-3 border-b">
         <img
-          src={selectedChat.users[0].profilePic.url}
-          alt={selectedChat.users[0].name}
-          className="w-9 h-9 rounded-full object-cover"
+          src={otherUser.profilePic.url}
+          alt={otherUser.name}
+          className="w-10 h-10 rounded-full object-cover"
         />
         <span className="font-semibold">
-          {selectedChat.users[0].name}
+          {otherUser.name}
         </span>
       </div>
 
@@ -115,7 +127,7 @@ const MessageContainer = ({ selectedChat, setChats }) => {
           <LoadingAnimation />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 bg-[var(--bg-main)]">
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {messages.length > 0 ? (
             messages.map((msg) => (
               <Message

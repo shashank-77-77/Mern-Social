@@ -1,36 +1,37 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { ChatData } from "../../context/ChatContext";
+import { UserData } from "../../context/UserContext";
 
-/* =========================================================
-   MESSAGE INPUT (COMPOSER)
-   ========================================================= */
 const MessageInput = ({ setMessages, selectedChat }) => {
-  const [textMsg, setTextMsg] = useState("");
-  const [sending, setSending] = useState(false);
+  const { user } = UserData();
   const { setChats } = ChatData();
 
-  /* =========================================================
-     SEND MESSAGE
-     ========================================================= */
+  const [textMsg, setTextMsg] = useState("");
+  const [sending, setSending] = useState(false);
+
+  // ✅ LOCK receiver ONCE per chat
+  const receiverId = useMemo(() => {
+    return selectedChat.users.find(
+      (u) => u._id !== user._id
+    )?._id;
+  }, [selectedChat, user._id]);
+
   const handleMessage = async (e) => {
     e.preventDefault();
-
-    if (!textMsg.trim() || sending) return;
+    if (!textMsg.trim() || sending || !receiverId) return;
 
     try {
       setSending(true);
 
       const { data } = await axios.post("/api/messages", {
         message: textMsg,
-        recieverId: selectedChat.users[0]._id,
+        recieverId: receiverId,
       });
 
-      /* Update local messages immediately (optimistic UI) */
       setMessages((prev) => [...prev, data]);
 
-      /* Update chat list latest message */
       setChats((prev) =>
         prev.map((chat) =>
           chat._id === selectedChat._id
@@ -46,45 +47,30 @@ const MessageInput = ({ setMessages, selectedChat }) => {
       );
 
       setTextMsg("");
-    } catch (error) {
-      console.error("Send message failed", error);
-      toast.error(
-        error?.response?.data?.message || "Failed to send message"
-      );
+    } catch (err) {
+      toast.error("Failed to send message");
     } finally {
       setSending(false);
     }
   };
 
-  /* =========================================================
-     RENDER
-     ========================================================= */
   return (
     <form
       onSubmit={handleMessage}
-      className="
-        flex items-center gap-2
-        p-3
-        border-t
-        bg-white
-        sticky bottom-0
-      "
+      className="flex items-center gap-2 p-3 border-t bg-white"
     >
-      {/* Input */}
       <input
-        type="text"
-        placeholder="Type a message…"
         value={textMsg}
         onChange={(e) => setTextMsg(e.target.value)}
-        className="flex-1 custom-input"
+        placeholder="Type a message…"
+        className="flex-1 px-4 py-2 rounded-full bg-gray-100"
         disabled={sending}
       />
 
-      {/* Send Button */}
       <button
         type="submit"
         disabled={sending || !textMsg.trim()}
-        className="btn-primary"
+        className="bg-blue-600 text-white px-5 py-2 rounded-full disabled:opacity-50"
       >
         {sending ? "Sending…" : "Send"}
       </button>
