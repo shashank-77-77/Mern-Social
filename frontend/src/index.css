@@ -204,3 +204,269 @@ body {
   background: rgba(37, 99, 235, 0.18);
   color: var(--brand);
 }
+
+/* ===============================
+   BUTTON INTERACTIONS
+================================ */
+button {
+  transition: transform var(--motion-fast),
+              box-shadow var(--motion-fast),
+              background var(--motion-fast);
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: scale(.96);
+}
+
+/* ===============================
+   INPUT INTERACTIONS
+================================ */
+input, select {
+  transition: box-shadow var(--motion-fast),
+              transform var(--motion-fast);
+}
+
+input:focus, select:focus {
+  box-shadow: var(--glow-blue-hover);
+  transform: translateY(-1px);
+}
+
+/* ===============================
+   ICON MICRO-MOTION
+================================ */
+svg {
+  transition: transform var(--motion-fast),
+              filter var(--motion-fast);
+}
+
+svg:hover {
+  transform: scale(1.15);
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,.25));
+}
+
+
+/* ===============================
+   GLOBAL 3D DESIGN TOKENS
+================================ */
+:root {
+  --depth-xs: 0 4px 12px rgba(0,0,0,.08);
+  --depth-sm: 0 10px 30px rgba(0,0,0,.12);
+  --depth-md: 0 20px 50px rgba(0,0,0,.18);
+
+  --glow-blue: 0 0 0 0 rgba(56,189,248,.5);
+  --glow-blue-hover: 0 0 32px rgba(56,189,248,.45);
+
+  --motion-fast: 150ms cubic-bezier(.4,0,.2,1);
+  --motion-med: 250ms cubic-bezier(.4,0,.2,1);
+}
+
+/* ===============================
+   GLASS / CARD BASE
+================================ */
+.glass {
+  background: rgba(255,255,255,.65);
+  backdrop-filter: blur(18px);
+  border-radius: 20px;
+  box-shadow: var(--depth-sm);
+  transition: transform var(--motion-med),
+              box-shadow var(--motion-med);
+}
+
+.glass:hover {
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: var(--depth-md);
+}
+
+/* ======================================================
+   GLOBAL UI INTELLIGENCE LAYER
+   Scope: Chat • Feed • Navbar • Pages • Glass • Motion
+====================================================== */
+
+/* ---------- DESIGN TOKENS ---------- */
+:root {
+  --depth-soft: 0 8px 30px rgba(0,0,0,.12);
+  --depth-hard: 0 30px 80px rgba(0,0,0,.25);
+  --glass-bg: rgba(255,255,255,.12);
+  --glass-border: rgba(255,255,255,.25);
+  --blur-fast: blur(12px);
+  --motion-fast: .18s cubic-bezier(.2,.8,.2,1);
+}
+
+/* ---------- PAGE TRANSITIONS ---------- */
+.page {
+  animation: page-enter .35s ease both;
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(12px) scale(.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- GLASSMORPHISM ---------- */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--depth-soft);
+  border-radius: 18px;
+}
+
+/* ---------- FEED / CARD DEPTH ---------- */
+.card {
+  transition: transform var(--motion-fast), box-shadow var(--motion-fast);
+}
+
+.card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: var(--depth-hard);
+}
+
+/* ---------- CHAT MESSAGE 3D POP ---------- */
+.message {
+  animation: msg-pop .22s ease both;
+}
+
+@keyframes msg-pop {
+  from { opacity: 0; transform: scale(.9) translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- OPTIMISTIC SEND GLOW ---------- */
+.message[sending="true"] {
+  opacity: .6;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 rgba(59,130,246,.4); }
+  50% { box-shadow: 0 0 16px rgba(59,130,246,.6); }
+  100% { box-shadow: 0 0 0 rgba(59,130,246,.4); }
+}
+
+/* ---------- NAVBAR FLOATING DOCK ---------- */
+.nav-item {
+  transition: transform .18s ease, filter .18s ease;
+}
+
+.nav-item:hover {
+  transform: translateY(-6px) scale(1.25);
+  filter: drop-shadow(0 14px 30px rgba(37,99,235,.5));
+}
+
+.nav-item.active {
+  transform: scale(1.35);
+}
+
+/* ---------- 3D TILT (GPU SAFE) ---------- */
+.tilt {
+  transform-style: preserve-3d;
+  transition: transform .15s ease;
+}
+
+.tilt:hover {
+  transform: perspective(800px)
+             rotateX(calc(var(--y,0px)))
+             rotateY(calc(var(--x,0px)));
+}
+
+/* ---------- GPU PERFORMANCE MODE ---------- */
+@supports (backdrop-filter: blur(1px)) {
+  .glass {
+    will-change: transform, backdrop-filter;
+  }
+}
+
+
+/* =========================================================
+   FLOATING BOTTOM NAV (3D DOCK)
+========================================================= */
+
+.bottom-nav {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+
+  display: flex;
+  gap: 18px;
+  padding: 12px 18px;
+
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  border-radius: 999px;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+  transition: transform 0.3s ease;
+}
+
+.bottom-nav:hover {
+  transform: translateX(-50%) translateY(-2px);
+}
+
+/* =========================================================
+   NAV ITEM
+========================================================= */
+
+.bottom-nav-item {
+  position: relative;
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #6b7280;
+  border-radius: 50%;
+
+  transition:
+    transform 0.25s ease,
+    color 0.25s ease,
+    background 0.25s ease;
+}
+
+.bottom-nav-item:hover {
+  transform: translateY(-6px) scale(1.15);
+  color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.12);
+}
+
+.bottom-nav-item.active {
+  color: #0ea5e9;
+}
+
+/* =========================================================
+   ICON
+========================================================= */
+
+.bottom-nav-item .icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+/* =========================================================
+   ACTIVE DOT
+========================================================= */
+
+.active-dot {
+  position: absolute;
+  bottom: 4px;
+
+  width: 6px;
+  height: 6px;
+
+  background: #0ea5e9;
+  border-radius: 50%;
+
+  box-shadow: 0 0 10px rgba(14, 165, 233, 0.8);
+}
