@@ -11,51 +11,54 @@ import {
 import { RiAccountCircleFill, RiAccountCircleLine } from "react-icons/ri";
 
 /* =========================================================
-   BOTTOM NAVIGATION BAR
-   ========================================================= */
+   FLOATING DOCK NAVBAR (SAFE)
+========================================================= */
 const NavigationBar = () => {
-  const location = useLocation();
-  const activePath = location.pathname;
+  const { pathname } = useLocation();
 
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-50">
-      <div className="flex justify-around items-center py-3">
-        {/* Home */}
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+      <div
+        className="
+          glass
+          px-6 py-3
+          rounded-2xl
+          flex gap-6 items-center
+          shadow-xl
+          backdrop-blur-xl
+        "
+      >
         <NavItem
           to="/"
-          active={activePath === "/"}
+          active={pathname === "/"}
           iconActive={<AiFillHome />}
           iconInactive={<AiOutlineHome />}
         />
 
-        {/* Reels */}
         <NavItem
           to="/reels"
-          active={activePath === "/reels"}
+          active={pathname === "/reels"}
           iconActive={<BsCameraReelsFill />}
           iconInactive={<BsCameraReels />}
         />
 
-        {/* Search */}
         <NavItem
           to="/search"
-          active={activePath === "/search"}
+          active={pathname === "/search"}
           iconActive={<IoSearchCircle />}
           iconInactive={<IoSearchCircleOutline />}
         />
 
-        {/* Chat */}
         <NavItem
           to="/chat"
-          active={activePath === "/chat"}
+          active={pathname === "/chat"}
           iconActive={<IoChatbubbleEllipses />}
           iconInactive={<IoChatbubbleEllipsesOutline />}
         />
 
-        {/* Account */}
         <NavItem
           to="/account"
-          active={activePath === "/account"}
+          active={pathname === "/account"}
           iconActive={<RiAccountCircleFill />}
           iconInactive={<RiAccountCircleLine />}
         />
@@ -67,17 +70,37 @@ const NavigationBar = () => {
 export default NavigationBar;
 
 /* =========================================================
-   NAV ITEM (REUSABLE, SCALABLE)
-   ========================================================= */
+   NAV ITEM — DOCK ICON
+========================================================= */
 const NavItem = ({ to, active, iconActive, iconInactive }) => {
   return (
     <Link
       to={to}
-      className={`nav-item text-2xl ${
-        active ? "active" : "text-gray-500"
-      }`}
+      className="
+        relative
+        flex items-center justify-center
+        text-2xl
+        transition-all
+        duration-300
+        transform-gpu
+        hover:-translate-y-2
+        hover:scale-110
+        active:scale-95
+      "
     >
-      {active ? iconActive : iconInactive}
+      <span
+        className={`
+          transition-all
+          duration-300
+          ${
+            active
+              ? "text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.8)] scale-125"
+              : "text-gray-400"
+          }
+        `}
+      >
+        {active ? iconActive : iconInactive}
+      </span>
     </Link>
   );
 };
