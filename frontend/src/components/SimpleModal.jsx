@@ -1,12 +1,12 @@
 import React, { useEffect } from "react";
 
 /* =========================================================
-   SIMPLE MODAL (REUSABLE OVERLAY)
-   ========================================================= */
+   SIMPLE MODAL (GLASS + 3D SAFE)
+========================================================= */
 const SimpleModal = ({ isOpen, onClose, children }) => {
-  /* =========================================================
+  /* ===============================
      ESC KEY HANDLER
-     ========================================================= */
+     =============================== */
   useEffect(() => {
     if (!isOpen) return;
 
@@ -33,14 +33,27 @@ const SimpleModal = ({ isOpen, onClose, children }) => {
       <div
         role="dialog"
         aria-modal="true"
-        className="relative card w-[320px] p-4"
+        className="
+          relative
+          glass card
+          w-[320px]
+          p-4
+          transform-gpu
+          animate-[modalPop_0.25s_ease-out]
+        "
       >
         {/* Close */}
         <div className="flex justify-end">
           <button
             onClick={onClose}
             aria-label="Close modal"
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+            className="
+              text-gray-400
+              hover:text-gray-600
+              text-xl
+              leading-none
+              transition
+            "
           >
             &times;
           </button>

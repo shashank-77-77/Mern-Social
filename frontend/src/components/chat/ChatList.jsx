@@ -1,9 +1,21 @@
 import React from "react";
 import { ChatData } from "../../context/ChatContext";
 
-const ChatList = () => {
-  const { chats, setSelectedChat, fetchMessages } = ChatData();
+/* =========================================================
+   CHAT LIST — STABLE + FUTURE-READY
+========================================================= */
 
+const ChatList = () => {
+  const {
+    chats = [],
+    selectedChat,
+    setSelectedChat,
+    fetchMessages,
+  } = ChatData();
+
+  /* ===============================
+     OPEN CHAT (SINGLE SOURCE)
+     =============================== */
   const openChat = (chat) => {
     setSelectedChat(chat);
     fetchMessages(chat._id);
@@ -12,10 +24,10 @@ const ChatList = () => {
   /* ===============================
      EMPTY STATE
      =============================== */
-  if (!chats || chats.length === 0) {
+  if (!chats.length) {
     return (
       <div className="w-[30%] border-r flex items-center justify-center">
-        <p className="text-gray-500 text-center">
+        <p className="text-gray-400 text-sm text-center">
           No conversations yet
         </p>
       </div>
@@ -28,29 +40,56 @@ const ChatList = () => {
   return (
     <div className="w-[30%] border-r p-3 overflow-y-auto">
       {chats.map((chat) => {
-        const friend = chat.user; // ✅ CORRECT FIELD
+        const friend = chat.user; // ✅ backend-aligned
+        const isActive = selectedChat?._id === chat._id;
 
         return (
           <div
             key={chat._id}
             onClick={() => openChat(chat)}
-            className="p-3 mb-2 cursor-pointer rounded-lg hover:bg-gray-100 flex items-center gap-3 transition"
+            className={`
+              p-3
+              mb-2
+              cursor-pointer
+              rounded-xl
+              flex
+              items-center
+              gap-3
+              transition-all
+              ${
+                isActive
+                  ? "bg-blue-50 border border-blue-200"
+                  : "hover:bg-gray-100"
+              }
+            `}
           >
+            {/* Avatar */}
             <img
               src={friend?.profilePic?.url || "/avatar.png"}
               alt={friend?.name || "User"}
-              className="w-9 h-9 rounded-full object-cover"
+              className="w-10 h-10 rounded-full object-cover"
             />
 
-            <div className="flex flex-col">
-              <span className="font-medium text-sm">
-                {friend?.name || "User"}
-              </span>
-
-              {chat.latestMessage && (
-                <span className="text-xs text-gray-500 truncate max-w-[140px]">
-                  {chat.latestMessage.content}
+            {/* Meta */}
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-sm truncate">
+                  {friend?.name || "User"}
                 </span>
+
+                {/* 🔔 UNREAD BADGE (READY, SAFE DEFAULT) */}
+                {chat.unreadCount > 0 && (
+                  <span className="bg-blue-600 text-white text-[10px] px-2 py-[2px] rounded-full">
+                    {chat.unreadCount}
+                  </span>
+                )}
+              </div>
+
+              {/* Last message */}
+              {chat.latestMessage?.text && (
+                <p className="text-xs text-gray-500 truncate">
+                  {chat.latestMessage.text}
+                </p>
               )}
             </div>
           </div>

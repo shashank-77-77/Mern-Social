@@ -22,10 +22,11 @@ const Message = ({
           px-4 py-2
           text-sm
           rounded-2xl
-          shadow-sm
           relative
+          break-words
           transition-all
           duration-300
+          transform-gpu
           ${
             ownMessage
               ? failed
@@ -35,12 +36,14 @@ const Message = ({
           }
           ${ownMessage ? "rounded-br-sm" : "rounded-bl-sm"}
           ${sending ? "opacity-70 animate-pulse" : ""}
+          shadow-md
+          hover:shadow-lg
         `}
       >
         {/* Message text */}
-        <div className="pr-7 break-words">{message}</div>
+        <div className="pr-7">{message}</div>
 
-        {/* STATUS INDICATORS (OWN MESSAGES ONLY) */}
+        {/* Status (own messages only) */}
         {ownMessage && (
           <span
             className="
@@ -51,6 +54,7 @@ const Message = ({
               flex
               items-center
               gap-1
+              select-none
             "
           >
             {failed ? (

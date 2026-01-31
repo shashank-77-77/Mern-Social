@@ -1,13 +1,31 @@
 import React from "react";
 
 /* =========================================================
-   CARD PRIMITIVE (DESIGN SYSTEM)
-   ========================================================= */
-const Card = ({ children, className = "" }) => {
+   CARD PRIMITIVE (DESIGN SYSTEM CORE)
+   - glass + depth ready
+   - tilt compatible
+   - zero logic coupling
+========================================================= */
+
+const Card = ({
+  children,
+  className = "",
+  as: Component = "div",
+}) => {
   return (
-    <div className={`card p-4 ${className}`}>
+    <Component
+      className={`
+        card
+        glass
+        relative
+        transition-all
+        duration-300
+        transform-gpu
+        ${className}
+      `}
+    >
       {children}
-    </div>
+    </Component>
   );
 };
 

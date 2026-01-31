@@ -20,8 +20,8 @@ import {
 } from "react-icons/fa";
 
 /* =========================================================
-   ACCOUNT (ENHANCED UI – SAFE)
-   ========================================================= */
+   ACCOUNT — 3D GLASS / MOTION READY (LOGIC SAFE)
+========================================================= */
 const Account = ({ user }) => {
   const navigate = useNavigate();
 
@@ -34,18 +34,14 @@ const Account = ({ user }) => {
   const { posts = [], reels = [], loading } = PostData();
 
   /* ===============================
-     PARALLAX EFFECT
+     PARALLAX (GPU SAFE)
      =============================== */
   useEffect(() => {
     const move = (e) => {
-      document.documentElement.style.setProperty(
-        "--x",
-        `${(e.clientX - window.innerWidth / 2) / 60}px`
-      );
-      document.documentElement.style.setProperty(
-        "--y",
-        `${(e.clientY - window.innerHeight / 2) / 60}px`
-      );
+      const x = (e.clientX - window.innerWidth / 2) / 60;
+      const y = (e.clientY - window.innerHeight / 2) / 60;
+      document.documentElement.style.setProperty("--x", `${x}px`);
+      document.documentElement.style.setProperty("--y", `${y}px`);
     };
     window.addEventListener("mousemove", move);
     return () => window.removeEventListener("mousemove", move);
@@ -137,12 +133,10 @@ const Account = ({ user }) => {
 
   const prevReel = () => setReelIndex((i) => (i > 0 ? i - 1 : i));
   const nextReel = () =>
-    setReelIndex((i) =>
-      i < myReels.length - 1 ? i + 1 : i
-    );
+    setReelIndex((i) => (i < myReels.length - 1 ? i + 1 : i));
 
   /* ===============================
-     GUARD
+     GUARDS
      =============================== */
   if (loading) return <Loading />;
   if (!user)
@@ -156,178 +150,142 @@ const Account = ({ user }) => {
      RENDER
      =============================== */
   return (
-    <div className="relative min-h-screen overflow-hidden pb-24">
-      {/* Parallax */}
-      <div className="parallax" />
+    <div className="page">
+      <div className="relative min-h-screen overflow-hidden pb-24">
+        <div className="parallax" />
 
-      {/* Floating Icons */}
-      <div className="floating-icons">
-        <FaFacebookF className="floating-icon text-blue-500 text-4xl" style={{ left: "10%" }} />
-        <FaInstagram className="floating-icon text-pink-500 text-4xl" style={{ left: "30%", animationDelay: "6s" }} />
-        <FaTwitter className="floating-icon text-sky-400 text-4xl" style={{ left: "60%", animationDelay: "12s" }} />
-        <FaLinkedin className="floating-icon text-blue-400 text-4xl" style={{ left: "85%", animationDelay: "18s" }} />
-      </div>
+        {/* Floating Icons */}
+        <div className="floating-icons pointer-events-none">
+          <FaFacebookF className="floating-icon text-blue-500 text-4xl" style={{ left: "10%" }} />
+          <FaInstagram className="floating-icon text-pink-500 text-4xl" style={{ left: "30%", animationDelay: "6s" }} />
+          <FaTwitter className="floating-icon text-sky-400 text-4xl" style={{ left: "60%", animationDelay: "12s" }} />
+          <FaLinkedin className="floating-icon text-blue-400 text-4xl" style={{ left: "85%", animationDelay: "18s" }} />
+        </div>
 
-      {/* CONTENT */}
-      <div className="relative z-10 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto space-y-6">
-          {/* PROFILE CARD */}
-          <div className="glass p-6 flex flex-col md:flex-row gap-6">
-            {/* Avatar */}
-            <div className="flex flex-col items-center gap-3">
-              <img
-                src={user.profilePic.url}
-                alt={user.name}
-                className="w-28 h-28 rounded-full object-cover ring-4 ring-cyan-400"
-              />
-              <input type="file" onChange={changeFileHandler} />
-              <button onClick={changeImageHandler} className="btn-primary text-sm">
-                Update Profile
-              </button>
+        {/* CONTENT */}
+        <div className="relative z-10 px-4 sm:px-6">
+          <div className="max-w-5xl mx-auto space-y-6">
+
+            {/* PROFILE CARD */}
+            <div className="glass card tilt p-6 flex flex-col md:flex-row gap-6">
+              <div className="flex flex-col items-center gap-3">
+                <img
+                  src={user.profilePic.url}
+                  alt={user.name}
+                  className="w-28 h-28 rounded-full object-cover ring-4 ring-cyan-400"
+                />
+                <input type="file" onChange={changeFileHandler} />
+                <button onClick={changeImageHandler} className="btn-primary text-sm">
+                  Update Profile
+                </button>
+              </div>
+
+              <div className="flex-1 space-y-3">
+                {editingName ? (
+                  <div className="flex gap-2">
+                    <input
+                      className="custom-input flex-1"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                    <button onClick={updateNameHandler} className="btn-primary text-sm">
+                      Save
+                    </button>
+                    <button onClick={() => setEditingName(false)} className="text-sm text-gray-400">
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-semibold">{user.name}</h2>
+                    <button onClick={() => setEditingName(true)}>
+                      <CiEdit />
+                    </button>
+                  </div>
+                )}
+
+                <p className="text-sm text-gray-400">{user.email}</p>
+                <p className="text-sm text-gray-400 capitalize">{user.gender}</p>
+
+                <div className="flex gap-4 text-sm">
+                  <button onClick={() => setShowFollowers(true)} className="hover:underline">
+                    {user.followers.length} followers
+                  </button>
+                  <button onClick={() => setShowFollowings(true)} className="hover:underline">
+                    {user.followings.length} following
+                  </button>
+                </div>
+
+                <button
+                  onClick={logoutHandler}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
+                >
+                  Logout
+                </button>
+              </div>
             </div>
 
-            {/* Info */}
-            <div className="flex-1 space-y-3">
-              {editingName ? (
-                <div className="flex gap-2">
-                  <input
-                    className="custom-input flex-1"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                  <button onClick={updateNameHandler} className="btn-primary text-sm">
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setEditingName(false)}
-                    className="text-sm text-gray-400"
-                  >
-                    Cancel
-                  </button>
+            {/* PASSWORD */}
+            <button onClick={() => setShowPasswordForm((p) => !p)} className="btn-primary">
+              {showPasswordForm ? "Cancel" : "Update Password"}
+            </button>
+
+            {showPasswordForm && (
+              <form onSubmit={updatePassword} className="glass card p-4 space-y-3">
+                <input type="password" className="custom-input" placeholder="Old password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} required />
+                <input type="password" className="custom-input" placeholder="New password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                <button type="submit" className="btn-primary">Save Password</button>
+              </form>
+            )}
+
+            {/* TABS */}
+            <div className="glass card p-3 flex justify-center gap-8">
+              {["post", "reel"].map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={`font-semibold ${tab === t ? "text-cyan-400" : "text-gray-400"}`}
+                >
+                  {t === "post" ? "Posts" : "Reels"}
+                </button>
+              ))}
+            </div>
+
+            {/* CONTENT */}
+            {tab === "post" &&
+              (myPosts.length ? myPosts.map((p) => (
+                <PostCard key={p._id} value={p} type="post" />
+              )) : (
+                <div className="glass card p-6 text-center text-gray-400">No posts yet</div>
+              ))}
+
+            {tab === "reel" &&
+              (myReels.length ? (
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                  <PostCard value={myReels[reelIndex]} type="reel" />
+                  <div className="flex sm:flex-col gap-4">
+                    {reelIndex > 0 && (
+                      <button onClick={prevReel} className="btn-primary rounded-full p-3">
+                        <FaArrowUp />
+                      </button>
+                    )}
+                    {reelIndex < myReels.length - 1 && (
+                      <button onClick={nextReel} className="btn-primary rounded-full p-3">
+                        <FaArrowDownLong />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-semibold">{user.name}</h2>
-                  <button onClick={() => setEditingName(true)}>
-                    <CiEdit />
-                  </button>
-                </div>
-              )}
-
-              <p className="text-sm text-gray-400">{user.email}</p>
-              <p className="text-sm text-gray-400 capitalize">{user.gender}</p>
-
-              <div className="flex gap-4 text-sm">
-                <button onClick={() => setShowFollowers(true)} className="hover:underline">
-                  {user.followers.length} followers
-                </button>
-                <button onClick={() => setShowFollowings(true)} className="hover:underline">
-                  {user.followings.length} following
-                </button>
-              </div>
-
-              <button
-                onClick={logoutHandler}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
-              >
-                Logout
-              </button>
-            </div>
+                <div className="glass card p-6 text-center text-gray-400">No reels yet</div>
+              ))}
           </div>
-
-          {/* PASSWORD */}
-          <button onClick={() => setShowPasswordForm((p) => !p)} className="btn-primary">
-            {showPasswordForm ? "Cancel" : "Update Password"}
-          </button>
-
-          {showPasswordForm && (
-            <form onSubmit={updatePassword} className="glass p-4 space-y-3">
-              <input
-                type="password"
-                className="custom-input"
-                placeholder="Old password"
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                required
-              />
-              <input
-                type="password"
-                className="custom-input"
-                placeholder="New password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-              <button type="submit" className="btn-primary">
-                Save Password
-              </button>
-            </form>
-          )}
-
-          {/* TABS */}
-          <div className="glass p-3 flex justify-center gap-8">
-            {["post", "reel"].map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`font-semibold ${
-                  tab === t ? "text-cyan-400" : "text-gray-400"
-                }`}
-              >
-                {t === "post" ? "Posts" : "Reels"}
-              </button>
-            ))}
-          </div>
-
-          {/* CONTENT */}
-          {tab === "post" &&
-            (myPosts.length ? (
-              myPosts.map((p) => (
-                <PostCard key={p._id} value={p} type="post" />
-              ))
-            ) : (
-              <div className="glass p-6 text-center text-gray-400">
-                No posts yet
-              </div>
-            ))}
-
-          {tab === "reel" &&
-            (myReels.length ? (
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                <PostCard
-                  value={myReels[reelIndex]}
-                  type="reel"
-                  key={myReels[reelIndex]._id}
-                />
-
-                <div className="flex sm:flex-col gap-4">
-                  {reelIndex > 0 && (
-                    <button onClick={prevReel} className="btn-primary rounded-full p-3">
-                      <FaArrowUp />
-                    </button>
-                  )}
-                  {reelIndex < myReels.length - 1 && (
-                    <button onClick={nextReel} className="btn-primary rounded-full p-3">
-                      <FaArrowDownLong />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="glass p-6 text-center text-gray-400">
-                No reels yet
-              </div>
-            ))}
         </div>
-      </div>
 
-      {/* Modals */}
-      {showFollowers && (
-        <Modal value={followersData} title="Followers" setShow={setShowFollowers} />
-      )}
-      {showFollowings && (
-        <Modal value={followingsData} title="Followings" setShow={setShowFollowings} />
-      )}
+        {/* MODALS */}
+        {showFollowers && <Modal value={followersData} title="Followers" setShow={setShowFollowers} />}
+        {showFollowings && <Modal value={followingsData} title="Followings" setShow={setShowFollowings} />}
+      </div>
     </div>
   );
 };

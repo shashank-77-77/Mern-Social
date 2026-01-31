@@ -16,8 +16,8 @@ import LikeModal from "./LikeModal";
 import { LoadingAnimation } from "./Loading";
 
 /* =========================================================
-   POST CARD
-   ========================================================= */
+   POST CARD — GLASS / 3D READY (LOGIC SAFE)
+========================================================= */
 const PostCard = ({ type, value }) => {
   const { user } = UserData();
   const { likePost, addComment, deletePost, loading, fetchPosts } = PostData();
@@ -29,25 +29,24 @@ const PostCard = ({ type, value }) => {
   const [showLikes, setShowLikes] = useState(false);
 
   const [comment, setComment] = useState("");
-
   const [editMode, setEditMode] = useState(false);
   const [caption, setCaption] = useState(value.caption || "");
   const [captionLoading, setCaptionLoading] = useState(false);
 
   const formatDate = format(new Date(value.createdAt), "MMMM do");
 
-  /* =========================================================
+  /* ===============================
      LIKE STATE SYNC
-     ========================================================= */
+     =============================== */
   useEffect(() => {
     setIsLike(value.likes.includes(user._id));
   }, [value.likes, user._id]);
 
-  /* =========================================================
-     HANDLERS
-     ========================================================= */
+  /* ===============================
+     HANDLERS (UNCHANGED)
+     =============================== */
   const likeHandler = () => {
-    setIsLike((prev) => !prev);
+    setIsLike((p) => !p);
     likePost(value._id);
   };
 
@@ -64,7 +63,6 @@ const PostCard = ({ type, value }) => {
 
   const updateCaption = async () => {
     if (!caption.trim()) return;
-
     setCaptionLoading(true);
     try {
       const { data } = await axios.put(`/api/post/${value._id}`, { caption });
@@ -78,12 +76,12 @@ const PostCard = ({ type, value }) => {
     }
   };
 
-  /* =========================================================
+  /* ===============================
      RENDER
-     ========================================================= */
+     =============================== */
   return (
     <div className="flex justify-center py-6">
-      {/* Owner Menu Modal */}
+      {/* OWNER MENU */}
       <SimpleModal isOpen={showMenu} onClose={() => setShowMenu(false)}>
         <LikeModal
           isOpen={showLikes}
@@ -112,9 +110,17 @@ const PostCard = ({ type, value }) => {
         </div>
       </SimpleModal>
 
-      {/* Post Card */}
-      <div className="card w-full max-w-md p-4">
-        {/* Header */}
+      {/* POST CARD */}
+      <div
+        className="
+          glass card tilt
+          w-full max-w-md
+          p-4
+          transition-transform
+          duration-300
+        "
+      >
+        {/* HEADER */}
         <div className="flex items-center justify-between mb-3">
           <Link
             to={`/user/${value.owner._id}`}
@@ -130,7 +136,7 @@ const PostCard = ({ type, value }) => {
               <div className="flex items-center gap-2">
                 <p className="font-semibold">{value.owner.name}</p>
                 {onlineUsers.includes(value.owner._id) && (
-                  <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                  <span className="w-2 h-2 bg-green-400 rounded-full" />
                 )}
               </div>
               <p className="text-xs text-gray-500">{formatDate}</p>
@@ -140,14 +146,14 @@ const PostCard = ({ type, value }) => {
           {value.owner._id === user._id && (
             <button
               onClick={() => setShowMenu(true)}
-              className="p-2 rounded-full hover:bg-gray-100"
+              className="p-2 rounded-full hover:bg-white/10"
             >
               <BsThreeDotsVertical />
             </button>
           )}
         </div>
 
-        {/* Caption */}
+        {/* CAPTION */}
         <div className="mb-3">
           {editMode ? (
             <div className="flex flex-col gap-2">
@@ -177,13 +183,18 @@ const PostCard = ({ type, value }) => {
           )}
         </div>
 
-        {/* Media */}
-        <div className="rounded-xl overflow-hidden mb-3">
+        {/* MEDIA */}
+        <div className="rounded-xl overflow-hidden mb-3 group">
           {type === "post" ? (
             <img
               src={value.post.url}
               alt=""
-              className="w-full object-cover"
+              className="
+                w-full object-cover
+                transition-transform
+                duration-500
+                group-hover:scale-[1.02]
+              "
             />
           ) : (
             <video
@@ -195,12 +206,12 @@ const PostCard = ({ type, value }) => {
           )}
         </div>
 
-        {/* Actions */}
+        {/* ACTIONS */}
         <div className="flex justify-between items-center text-gray-600 mb-2">
           <div className="flex items-center gap-3">
             <button
               onClick={likeHandler}
-              className="text-2xl text-red-500"
+              className="text-2xl text-red-500 active:scale-90 transition"
             >
               {isLike ? <IoHeartSharp /> : <IoHeartOutline />}
             </button>
@@ -222,13 +233,10 @@ const PostCard = ({ type, value }) => {
           </button>
         </div>
 
-        {/* Comments */}
+        {/* COMMENTS */}
         {showComments && (
           <>
-            <form
-              onSubmit={addCommentHandler}
-              className="flex gap-2 my-3"
-            >
+            <form onSubmit={addCommentHandler} className="flex gap-2 my-3">
               <input
                 className="custom-input flex-1"
                 placeholder="Add a comment..."
@@ -265,8 +273,8 @@ const PostCard = ({ type, value }) => {
 export default PostCard;
 
 /* =========================================================
-   COMMENT COMPONENT
-   ========================================================= */
+   COMMENT (SAFE)
+========================================================= */
 export const Comment = ({ value, user, owner, id }) => {
   const { deleteComment } = PostData();
 

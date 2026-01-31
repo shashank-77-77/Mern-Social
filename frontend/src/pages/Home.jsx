@@ -10,16 +10,21 @@ import {
   FaInstagram,
   FaTwitter,
   FaLinkedin,
+  FaReact,
+  FaGithub,
 } from "react-icons/fa";
 
 /* =========================================================
-   HOME / FEED (ENHANCED UI – SAFE)
-   ========================================================= */
+   HOME / FEED — FUTURE-PROOF (SAFE)
+   - Page wrapper added
+   - Glass + depth preserved
+   - Ready for route motion / GPU blur / sound
+========================================================= */
 const Home = () => {
   const { posts, loading } = PostData();
 
   /* ===============================
-     PARALLAX EFFECT
+     PARALLAX (GPU-SAFE)
      =============================== */
   useEffect(() => {
     const move = (e) => {
@@ -38,67 +43,54 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen overflow-hidden pb-20">
-      {/* PARALLAX BACKGROUND */}
-      <div className="parallax" />
+    /* ✅ STEP 2 — PAGE ROOT (MANDATORY) */
+    <div className="page">
+      <div className="relative min-h-screen overflow-hidden pb-20">
+        {/* PARALLAX BACKGROUND */}
+        <div className="parallax" />
 
-      {/* FLOATING SOCIAL ICONS */}
-      <div className="floating-icons">
-        <FaFacebookF
-          className="floating-icon text-blue-500 text-4xl"
-          style={{ left: "5%", animationDelay: "0s" }}
-        />
-        <FaInstagram
-          className="floating-icon text-pink-500 text-4xl"
-          style={{ left: "25%", animationDelay: "6s" }}
-        />
-        <FaTwitter
-          className="floating-icon text-sky-400 text-4xl"
-          style={{ left: "55%", animationDelay: "12s" }}
-        />
-        <FaLinkedin
-          className="floating-icon text-blue-400 text-4xl"
-          style={{ left: "80%", animationDelay: "18s" }}
-        />
-      </div>
+        {/* FLOATING ICONS (DECOR ONLY) */}
+        <div className="floating-icons pointer-events-none">
+          <FaFacebookF className="floating-icon text-blue-500 text-4xl" style={{ left: "5%", animationDelay: "0s" }} />
+          <FaInstagram className="floating-icon text-pink-500 text-4xl" style={{ left: "25%", animationDelay: "6s" }} />
+          <FaTwitter className="floating-icon text-sky-400 text-4xl" style={{ left: "55%", animationDelay: "12s" }} />
+          <FaLinkedin className="floating-icon text-blue-400 text-4xl" style={{ left: "80%", animationDelay: "18s" }} />
+          <FaReact className="floating-icon text-cyan-400 text-4xl" style={{ left: "90%", animationDelay: "24s" }} />
+          <FaGithub className="floating-icon text-gray-700 text-4xl" style={{ left: "40%", animationDelay: "30s" }} />
+        </div>
 
-      {/* MAIN FEED */}
-      <div className="relative z-10 px-3 sm:px-4">
-        <div
-          className="
-            max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl
-            mx-auto
-            space-y-6
-          "
-        >
-          {/* CREATE POST */}
-          <div className="glass p-4 sm:p-5">
-            <AddPost type="post" />
-          </div>
-
-          {/* AI CHAT */}
-          <div className="glass p-4 sm:p-5">
-            <AiChat />
-          </div>
-
-          {/* POSTS */}
-          {loading ? (
-            <div className="flex justify-center py-14">
-              <Loading />
+        {/* MAIN FEED */}
+        <div className="relative z-10 px-3 sm:px-4">
+          <div className="max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto space-y-6">
+            {/* CREATE POST */}
+            <div className="glass card">
+              <AddPost type="post" />
             </div>
-          ) : posts && posts.length > 0 ? (
-            <div className="space-y-6">
-              {posts.map((post) => (
-                <PostCard
-                  key={post._id}
-                  value={post}
-                  type="post"
-                />
-              ))}
+
+            {/* AI CHAT */}
+            <div className="glass card">
+              <AiChat />
             </div>
-          ) : (
-            <EmptyState />
-          )}
+
+            {/* POSTS */}
+            {loading ? (
+              <div className="flex justify-center py-14">
+                <Loading />
+              </div>
+            ) : posts && posts.length > 0 ? (
+              <div className="space-y-6">
+                {posts.map((post) => (
+                  <PostCard
+                    key={post._id}
+                    value={post}
+                    type="post"
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState />
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -108,11 +100,11 @@ const Home = () => {
 export default Home;
 
 /* =========================================================
-   EMPTY STATE
-   ========================================================= */
+   EMPTY STATE (GLASS)
+========================================================= */
 const EmptyState = () => {
   return (
-    <div className="glass p-10 text-center">
+    <div className="glass card p-10 text-center">
       <h3 className="text-xl font-semibold mb-2">
         No posts yet ✨
       </h3>
