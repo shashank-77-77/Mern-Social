@@ -9,6 +9,9 @@ import Chat from "../components/chat/Chat";
 import MessageContainer from "../components/chat/MessageContainer";
 import api from "../utils/axios";
 
+// ✅ NEW: visual wrapper only
+import GlassCard from "../ui/GlassCard";
+
 const ChatPage = ({ user }) => {
   const {
     createChat,
@@ -26,7 +29,7 @@ const ChatPage = ({ user }) => {
   const [searching, setSearching] = useState(false);
 
   /* ===============================
-     PARALLAX BACKGROUND
+     PARALLAX BACKGROUND (UNCHANGED)
      =============================== */
   useEffect(() => {
     const move = (e) => {
@@ -44,7 +47,7 @@ const ChatPage = ({ user }) => {
   }, []);
 
   /* ===============================
-     FETCH CHATS
+     FETCH CHATS (UNCHANGED)
      =============================== */
   useEffect(() => {
     const loadChats = async () => {
@@ -55,7 +58,7 @@ const ChatPage = ({ user }) => {
   }, [setChats]);
 
   /* ===============================
-     SEARCH USERS
+     SEARCH USERS (UNCHANGED)
      =============================== */
   const canSearch = useMemo(
     () => query.trim().length > 0 && searchMode,
@@ -84,7 +87,7 @@ const ChatPage = ({ user }) => {
   }, [canSearch, query]);
 
   /* ===============================
-     CREATE CHAT + AUTO SELECT
+     CREATE CHAT (UNCHANGED)
      =============================== */
   const createNewChat = async (userId) => {
     try {
@@ -113,9 +116,18 @@ const ChatPage = ({ user }) => {
 
       {/* Floating icons */}
       <div className="floating-icons">
-        <FaComments className="floating-icon text-blue-400 text-4xl" style={{ left: "15%" }} />
-        <FaPaperPlane className="floating-icon text-cyan-400 text-4xl" style={{ left: "45%", animationDelay: "8s" }} />
-        <FaBolt className="floating-icon text-purple-400 text-4xl" style={{ left: "75%", animationDelay: "14s" }} />
+        <FaComments
+          className="floating-icon text-blue-400 text-4xl"
+          style={{ left: "15%" }}
+        />
+        <FaPaperPlane
+          className="floating-icon text-cyan-400 text-4xl"
+          style={{ left: "45%", animationDelay: "8s" }}
+        />
+        <FaBolt
+          className="floating-icon text-purple-400 text-4xl"
+          style={{ left: "75%", animationDelay: "14s" }}
+        />
       </div>
 
       {/* CONTENT */}
@@ -123,16 +135,7 @@ const ChatPage = ({ user }) => {
         <div className="max-w-6xl mx-auto">
           <div className="flex gap-4">
             {/* LEFT PANEL */}
-            <div
-              className="
-                w-full
-                md:w-[32%]
-                glass
-                p-4
-                flex
-                flex-col
-              "
-            >
+            <GlassCard className="w-full md:w-[32%] p-4 flex flex-col">
               {/* Search Bar */}
               <div className="flex items-center gap-2 mb-4">
                 <button
@@ -167,14 +170,7 @@ const ChatPage = ({ user }) => {
                       <div
                         key={u._id}
                         onClick={() => createNewChat(u._id)}
-                        className="
-                          flex items-center gap-3
-                          px-3 py-2
-                          rounded-xl
-                          cursor-pointer
-                          hover:bg-white/20
-                          transition
-                        "
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-white/20 transition"
                       >
                         <img
                           src={u.profilePic.url}
@@ -215,11 +211,11 @@ const ChatPage = ({ user }) => {
                   </p>
                 )}
               </div>
-            </div>
+            </GlassCard>
 
             {/* RIGHT PANEL */}
             <div className="hidden md:flex md:w-[68%]">
-              <div className="glass w-full overflow-hidden">
+              <GlassCard className="w-full overflow-hidden">
                 {selectedChat ? (
                   <MessageContainer
                     selectedChat={selectedChat}
@@ -233,7 +229,7 @@ const ChatPage = ({ user }) => {
                     </p>
                   </div>
                 )}
-              </div>
+              </GlassCard>
             </div>
           </div>
         </div>

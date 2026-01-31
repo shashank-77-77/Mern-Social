@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { UserData } from "../context/UserContext";
 import { PostData } from "../context/PostContext";
 import toast from "react-hot-toast";
@@ -7,8 +8,13 @@ import {
   FaFacebookF,
   FaInstagram,
   FaTwitter,
-  FaLinkedin
+  FaLinkedin,
 } from "react-icons/fa";
+
+/* =========================================================
+   REGISTER — 3D GLASS / REACT-BITS STYLE
+   (LOGIC UNCHANGED)
+========================================================= */
 
 const Register = () => {
   const navigate = useNavigate();
@@ -23,44 +29,52 @@ const Register = () => {
   const [filePrev, setFilePrev] = useState(null);
 
   /* ===============================
-     PARALLAX EFFECT
+     PARALLAX EFFECT (GPU SAFE)
      =============================== */
   useEffect(() => {
     const move = (e) => {
-      document.documentElement.style.setProperty(
-        "--x",
-        `${(e.clientX - window.innerWidth / 2) / 40}px`
-      );
-      document.documentElement.style.setProperty(
-        "--y",
-        `${(e.clientY - window.innerHeight / 2) / 40}px`
-      );
+      const x = (e.clientX - window.innerWidth / 2) / 45;
+      const y = (e.clientY - window.innerHeight / 2) / 45;
+
+      document.documentElement.style.setProperty("--x", `${x}px`);
+      document.documentElement.style.setProperty("--y", `${y}px`);
     };
+
     window.addEventListener("mousemove", move);
     return () => window.removeEventListener("mousemove", move);
   }, []);
 
+  /* ===============================
+     FILE PREVIEW (UNCHANGED)
+     =============================== */
   const changeFileHandler = (e) => {
     const f = e.target.files[0];
     if (!f) return;
+
     setFile(f);
-    const r = new FileReader();
-    r.onloadend = () => setFilePrev(r.result);
-    r.readAsDataURL(f);
+    const reader = new FileReader();
+    reader.onloadend = () => setFilePrev(reader.result);
+    reader.readAsDataURL(f);
   };
 
+  /* ===============================
+     SUBMIT (UNCHANGED)
+     =============================== */
   const submitHandler = (e) => {
     e.preventDefault();
+
     if (password.length < 7 || password.length > 10) {
       toast.error("Password must be 7–10 characters");
       return;
     }
+
     const fd = new FormData();
     fd.append("name", name);
     fd.append("email", email);
     fd.append("password", password);
     fd.append("gender", gender);
     fd.append("file", file);
+
     registerUser(fd, navigate, fetchPosts);
   };
 
@@ -74,56 +88,134 @@ const Register = () => {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Parallax */}
+      {/* PARALLAX BACKGROUND */}
       <div className="parallax" />
 
-      {/* Floating Icons */}
+      {/* FLOATING SOCIAL ICONS */}
       <div className="floating-icons">
-        <FaFacebookF className="floating-icon text-blue-500 text-5xl" style={{ left: "10%", animationDelay: "0s" }} />
-        <FaInstagram className="floating-icon text-pink-500 text-5xl" style={{ left: "30%", animationDelay: "5s" }} />
-        <FaTwitter className="floating-icon text-sky-400 text-5xl" style={{ left: "60%", animationDelay: "10s" }} />
-        <FaLinkedin className="floating-icon text-blue-400 text-5xl" style={{ left: "80%", animationDelay: "15s" }} />
+        <FaFacebookF
+          className="floating-icon text-blue-500 text-5xl"
+          style={{ left: "12%", animationDelay: "0s" }}
+        />
+        <FaInstagram
+          className="floating-icon text-pink-500 text-5xl"
+          style={{ left: "32%", animationDelay: "5s" }}
+        />
+        <FaTwitter
+          className="floating-icon text-sky-400 text-5xl"
+          style={{ left: "62%", animationDelay: "10s" }}
+        />
+        <FaLinkedin
+          className="floating-icon text-blue-400 text-5xl"
+          style={{ left: "82%", animationDelay: "15s" }}
+        />
       </div>
 
-      {/* CARD */}
-      <div className="glass w-full max-w-md p-8 relative z-10">
-        <h1 className="text-3xl font-bold text-center mb-2">
+      {/* 3D GLASS REGISTER CARD */}
+      <motion.div
+        initial={{ opacity: 0, y: 30, rotateX: -10 }}
+        animate={{ opacity: 1, y: 0, rotateX: 0 }}
+        whileHover={{ rotateX: 6, rotateY: -6, scale: 1.02 }}
+        transition={{ type: "spring", stiffness: 120, damping: 18 }}
+        className="
+          glass
+          w-full
+          max-w-md
+          p-8
+          relative
+          z-10
+          transform-gpu
+        "
+      >
+        {/* Header */}
+        <h1 className="text-3xl font-bold text-center mb-1">
           Join the Network 🚀
         </h1>
         <p className="text-center text-gray-400 mb-6">
           Create, connect & grow with your community
         </p>
 
+        {/* Form */}
         <form onSubmit={submitHandler} className="space-y-4">
           {filePrev && (
-            <img
+            <motion.img
               src={filePrev}
               alt="preview"
-              className="w-24 h-24 rounded-full mx-auto object-cover border border-cyan-400"
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="
+                w-24 h-24
+                rounded-full
+                mx-auto
+                object-cover
+                border
+                border-cyan-400
+              "
             />
           )}
 
-          <input type="file" onChange={changeFileHandler} className="custom-input" />
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Username" className="custom-input" />
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="custom-input" />
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="custom-input" />
+          <input
+            type="file"
+            onChange={changeFileHandler}
+            className="custom-input"
+          />
 
-          <select value={gender} onChange={(e) => setGender(e.target.value)} className="custom-input">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Username"
+            className="custom-input"
+            required
+          />
+
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            className="custom-input"
+            required
+          />
+
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password (7–10 chars)"
+            className="custom-input"
+            required
+          />
+
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            className="custom-input"
+            required
+          >
             <option value="">Select gender</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
           </select>
 
-          <button className="auth-btn">Create Account</button>
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            className="auth-btn w-full"
+          >
+            Create Account
+          </motion.button>
         </form>
 
+        {/* CTA */}
         <div className="text-center mt-6 text-sm text-gray-400">
           Already inside the circle?
-          <Link to="/login" className="text-cyan-400 font-semibold ml-1">
+          <Link
+            to="/login"
+            className="text-cyan-400 font-semibold ml-1 hover:underline"
+          >
             Login →
           </Link>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

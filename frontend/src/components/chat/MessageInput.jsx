@@ -15,6 +15,12 @@ const MessageInput = ({ setMessages, selectedChat }) => {
   const [sending, setSending] = useState(false);
 
   /* ===============================
+     AI INTELLIGENCE STATE
+     =============================== */
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  /* ===============================
      LOCK RECEIVER (STABLE)
      =============================== */
   const receiverId = useMemo(() => {
@@ -28,22 +34,80 @@ const MessageInput = ({ setMessages, selectedChat }) => {
      =============================== */
   const typingRef = useRef(false);
   const timerRef = useRef(null);
+  const aiTimerRef = useRef(null);
 
   const handleTyping = (e) => {
-    setTextMsg(e.target.value);
+    const value = e.target.value;
+    setTextMsg(value);
 
-    if (!socket || !selectedChat?._id) return;
+    // socket typing
+    if (socket && selectedChat?._id) {
+      if (!typingRef.current) {
+        typingRef.current = true;
+        socket.emit("typing", { chatId: selectedChat._id });
+      }
 
-    if (!typingRef.current) {
-      typingRef.current = true;
-      socket.emit("typing", { chatId: selectedChat._id });
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        typingRef.current = false;
+        socket.emit("stopTyping", { chatId: selectedChat._id });
+      }, 1200);
     }
 
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      typingRef.current = false;
-      socket.emit("stopTyping", { chatId: selectedChat._id });
-    }, 1200);
+    // AI debounce
+    clearTimeout(aiTimerRef.current);
+    if (value.trim().length > 4) {
+      aiTimerRef.current = setTimeout(() => {
+        fetchAiSuggestions(value);
+      }, 600);
+    } else {
+      setAiSuggestions([]);
+    }
+  };
+
+  /* ===============================
+     AI: FETCH SUGGESTIONS
+     =============================== */
+  const fetchAiSuggestions = async (text) => {
+    try {
+      setAiLoading(true);
+      const { data } = await axios.post("/api/ai/suggest", {
+        text,
+        context: "chat",
+      });
+
+      if (Array.isArray(data)) {
+        setAiSuggestions(data.slice(0, 3));
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  /* ===============================
+     AI: IMPROVE MESSAGE
+     =============================== */
+  const improveMessage = async () => {
+    if (!textMsg.trim()) return;
+
+    try {
+      setAiLoading(true);
+      const { data } = await axios.post("/api/ai/improve", {
+        text: textMsg,
+        context: "chat",
+      });
+
+      if (data?.text) {
+        setTextMsg(data.text);
+        setAiSuggestions([]);
+      }
+    } catch {
+      toast.error("AI improvement failed");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   /* ===============================
@@ -51,7 +115,6 @@ const MessageInput = ({ setMessages, selectedChat }) => {
      =============================== */
   const handleMessage = async (e) => {
     e.preventDefault();
-
     if (!textMsg.trim() || sending || !receiverId) return;
 
     const tempId = `temp-${Date.now()}`;
@@ -66,9 +129,9 @@ const MessageInput = ({ setMessages, selectedChat }) => {
       createdAt: new Date().toISOString(),
     };
 
-    // 1️⃣ Optimistic UI injection
     setMessages((prev) => [...prev, optimisticMessage]);
     setTextMsg("");
+    setAiSuggestions([]);
     setSending(true);
 
     try {
@@ -77,14 +140,10 @@ const MessageInput = ({ setMessages, selectedChat }) => {
         recieverId: receiverId,
       });
 
-      // 2️⃣ Replace temp message with real one
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg._id === tempId ? data : msg
-        )
+        prev.map((m) => (m._id === tempId ? data : m))
       );
 
-      // 3️⃣ Update chat preview (NO LOGIC CHANGE)
       setChats((prev) =>
         prev.map((chat) =>
           chat._id === selectedChat._id
@@ -101,16 +160,14 @@ const MessageInput = ({ setMessages, selectedChat }) => {
 
       socket?.emit("stopTyping", { chatId: selectedChat._id });
       typingRef.current = false;
-    } catch (err) {
-      // 4️⃣ Mark optimistic message as failed
+    } catch {
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg._id === tempId
-            ? { ...msg, sending: false, failed: true }
-            : msg
+        prev.map((m) =>
+          m._id === tempId
+            ? { ...m, sending: false, failed: true }
+            : m
         )
       );
-
       toast.error("Message failed to send");
     } finally {
       setSending(false);
@@ -118,54 +175,100 @@ const MessageInput = ({ setMessages, selectedChat }) => {
   };
 
   /* ===============================
-     CLEANUP ON CHAT SWITCH
+     CLEANUP
      =============================== */
   useEffect(() => {
     setTextMsg("");
+    setAiSuggestions([]);
     typingRef.current = false;
     clearTimeout(timerRef.current);
+    clearTimeout(aiTimerRef.current);
   }, [selectedChat?._id]);
 
   return (
-    <form
-      onSubmit={handleMessage}
-      className="flex items-center gap-2 p-3 border-t bg-white"
-    >
-      <input
-        value={textMsg}
-        onChange={handleTyping}
-        placeholder="Type a message…"
-        className="
-          flex-1
-          px-4 py-2
-          rounded-full
-          bg-gray-100
-          focus:outline-none
-          focus:ring-2
-          focus:ring-blue-400
-          transition
-        "
-        disabled={sending}
-      />
+    <div className="border-t bg-white p-3">
+      {/* AI Suggestions */}
+      {aiSuggestions.length > 0 && (
+        <div className="flex gap-2 mb-2 flex-wrap">
+          {aiSuggestions.map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                setTextMsg(s);
+                setAiSuggestions([]);
+              }}
+              className="
+                text-xs
+                px-3 py-1
+                rounded-full
+                bg-blue-50
+                text-blue-600
+                hover:bg-blue-100
+                transition
+              "
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <button
-        type="submit"
-        disabled={sending || !textMsg.trim()}
-        className="
-          bg-blue-600
-          text-white
-          px-5 py-2
-          rounded-full
-          font-medium
-          hover:bg-blue-700
-          transition
-          disabled:opacity-50
-          disabled:cursor-not-allowed
-        "
+      <form
+        onSubmit={handleMessage}
+        className="flex items-center gap-2"
       >
-        Send
-      </button>
-    </form>
+        <input
+          value={textMsg}
+          onChange={handleTyping}
+          placeholder="Type a message…"
+          className="
+            flex-1
+            px-4 py-2
+            rounded-full
+            bg-gray-100
+            focus:outline-none
+            focus:ring-2
+            focus:ring-blue-400
+          "
+          disabled={sending}
+        />
+
+        {textMsg.trim() && (
+          <button
+            type="button"
+            onClick={improveMessage}
+            disabled={aiLoading}
+            className="
+              px-3
+              text-sm
+              text-blue-600
+              hover:text-blue-700
+              transition
+            "
+          >
+            ✨ Improve
+          </button>
+        )}
+
+        <button
+          type="submit"
+          disabled={sending || !textMsg.trim()}
+          className="
+            bg-blue-600
+            text-white
+            px-5 py-2
+            rounded-full
+            font-medium
+            hover:bg-blue-700
+            transition
+            disabled:opacity-50
+          "
+        >
+          Send
+        </button>
+      </form>
+    </div>
   );
 };
 
