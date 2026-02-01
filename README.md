@@ -1,12 +1,14 @@
 MERN Social Media Platform with .NET AI Service
-
+================================
+Deployment at Render - https://mern-social-4-ufh7.onrender.com/login
+================================
 A production-oriented, full-stack social media platform built with React (Vite),
 Node.js / Express, and a dedicated .NET 8 AI microservice, designed using service
 separation, containerization, and cloud-ready deployment patterns.
 
-======================================================================
+================================
 ARCHITECTURE OVERVIEW
-======================================================================
+================================
 
 Client (Browser)
       |
@@ -19,10 +21,10 @@ NGINX Reverse Proxy (Port 80)
                           |
                           v
                    MongoDB Atlas (Cloud)
-
-======================================================================
+                   
+================================
 SERVICES
-======================================================================
+================================
 
 FRONTEND (React + Vite)
 - Stateless Single Page Application
@@ -56,9 +58,9 @@ MEDIA STORAGE (Cloudinary)
 - CDN optimized delivery
 - Used for profile pictures, posts, reels
 
-======================================================================
+===================================
 AUTHENTICATION & API TOOLS
-======================================================================
+===================================
 
 JWT (JSON Web Tokens)
 - Stateless authentication
@@ -75,10 +77,9 @@ SWAGGER
 - Available for SocialAI Service
 - URL: http://localhost:5187/swagger
 
-======================================================================
+=====================================
 ENVIRONMENT CONFIGURATION
-======================================================================
-
+=====================================
 backend/.env
 
 PORT=5000
@@ -107,9 +108,9 @@ SocialAI/appsettings.json
   }
 }
 
-======================================================================
+=====================================
 RUNNING WITH DOCKER (RECOMMENDED)
-======================================================================
+=====================================
 
 From project root:
 
@@ -124,9 +125,9 @@ Frontend  -> http://localhost
 Backend   -> http://localhost/api
 SocialAI  -> http://localhost/ai/swagger
 
-======================================================================
+=====================================
 RUNNING WITHOUT DOCKER
-======================================================================
+=====================================
 
 Frontend:
 cd frontend
@@ -146,9 +147,9 @@ dotnet restore
 dotnet run
 http://localhost:5187
 
-======================================================================
+=======================================
 AWS EC2 DEPLOYMENT (HIGH LEVEL)
-======================================================================
+=======================================
 
 ssh -i key.pem ec2-user@<EC2_PUBLIC_IP>
 sudo yum install docker -y
@@ -159,9 +160,9 @@ docker-compose up -d --build
 
 Ensure ports 80, 5000, and 5187 are open.
 
-======================================================================
+========================================
 COMMON ISSUES
-======================================================================
+========================================
 
 Blank frontend       -> Check NGINX routing
 401 Unauthorized     -> Verify JWT token
@@ -169,15 +170,15 @@ Upload fails         -> Check Cloudinary credentials
 AI timeout           -> Ensure SocialAI service is running
 Socket disconnect    -> Verify WebSocket proxying
 
-======================================================================
+==========================================
 SUMMARY
-======================================================================
+==========================================
 
 - Clean microservice separation
 - JWT-based authentication
 - Cloudinary media offloading
 - Real-time chat with Socket.io
 - AI extensibility via .NET 8
-- Dockerized, cloud-ready deployment
+- Dockerized, Render,AWS cloud-ready deployment.
 
-======================================================================
+===========================================
