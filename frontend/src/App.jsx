@@ -1,5 +1,10 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -9,38 +14,51 @@ import UserAccount from "./pages/UserAccount";
 import Reels from "./pages/Reels";
 import Search from "./pages/Search";
 import ChatPage from "./pages/ChatPage";
-import Developer from "./pages/Developer"; // ✅ NEW (isolated addition)
+import Developer from "./pages/Developer";
 
 import NavigationBar from "./components/NavigationBar";
 import NotFound from "./components/NotFound";
 import { Loading } from "./components/Loading";
 
 import { UserData } from "./context/UserContext";
-
-// ✅ 3D / background layer (non-blocking, no routing impact)
 import SceneBackground from "./ui/SceneBackground";
 
 const App = () => {
   const { loading, isAuth, user } = UserData();
 
-  // 🔒 Global loading gate (unchanged)
+  /* ======================================================
+     GLOBAL LOADING GATE
+     (prevents route flash & auth race conditions)
+  ====================================================== */
   if (loading) {
     return <Loading />;
   }
 
   return (
     <>
-      {/* 🔹 Global visual layer (independent of routing/auth) */}
+      {/* ==================================================
+          GLOBAL VISUAL LAYER
+          (independent of routing & auth)
+      ================================================== */}
       <SceneBackground />
 
-      {/* 🔹 Application routing layer */}
+      {/* ==================================================
+          APPLICATION ROUTING LAYER
+      ================================================== */}
       <BrowserRouter>
         <Routes>
-          {/* Core routes */}
-          <Route path="/" element={isAuth ? <Home /> : <Login />} />
-          <Route path="/reels" element={isAuth ? <Reels /> : <Login />} />
+          {/* ================= CORE ROUTES ================= */}
+          <Route
+            path="/"
+            element={isAuth ? <Home /> : <Login />}
+          />
 
-          {/* Account routes */}
+          <Route
+            path="/reels"
+            element={isAuth ? <Reels /> : <Login />}
+          />
+
+          {/* ================= ACCOUNT ROUTES =============== */}
           <Route
             path="/account"
             element={isAuth ? <Account user={user} /> : <Login />}
@@ -51,28 +69,49 @@ const App = () => {
             element={isAuth ? <UserAccount user={user} /> : <Login />}
           />
 
-          {/* Auth routes */}
-          <Route path="/login" element={!isAuth ? <Login /> : <Home />} />
+          {/* ================= AUTH ROUTES ================== */}
           <Route
-            path="/register"
-            element={!isAuth ? <Register /> : <Home />}
+            path="/login"
+            element={!isAuth ? <Login /> : <Navigate to="/" replace />}
           />
 
-          {/* Feature routes */}
-          <Route path="/search" element={isAuth ? <Search /> : <Login />} />
+          <Route
+            path="/register"
+            element={!isAuth ? <Register /> : <Navigate to="/" replace />}
+          />
+
+          {/* ================= FEATURE ROUTES =============== */}
+          <Route
+            path="/search"
+            element={isAuth ? <Search /> : <Login />}
+          />
+
           <Route
             path="/chat"
             element={isAuth ? <ChatPage user={user} /> : <Login />}
           />
 
-          {/* ✅ Developer route (explicitly non-auth-gated) */}
+          {/* ================= DEVELOPER / PORTFOLIO ======== */}
+          {/* Canonical route */}
           <Route path="/developer" element={<Developer />} />
 
-          {/* Fallback */}
+          {/* SEO + UX alias */}
+          <Route path="/portfolio" element={<Developer />} />
+
+          {/* Legacy deep-link normalization */}
+          <Route
+            path="/portfolio/index.html"
+            element={<Navigate to="/portfolio" replace />}
+          />
+
+          {/* ================= FALLBACK ===================== */}
           <Route path="*" element={<NotFound />} />
         </Routes>
 
-        {/* 🔹 Persistent navigation (auth-gated, unchanged) */}
+        {/* ==================================================
+            PERSISTENT NAVIGATION
+            (auth-gated, rendered after routes)
+        ================================================== */}
         {isAuth && <NavigationBar />}
       </BrowserRouter>
     </>
