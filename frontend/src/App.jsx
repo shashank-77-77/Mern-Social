@@ -93,7 +93,7 @@ const App = () => {
 
           {/* ================= DEVELOPER / PORTFOLIO ======== */}
           {/* Canonical route */}
-          <Route path="/developer" element={<Developer />} />
+          {/* <Route path="/developer" element={<Developer />} /> */}
 
           {/* SEO + UX alias */}
           <Route path="/portfolio" element={<Developer />} />
