@@ -1,18 +1,16 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
+
 import { UserData } from "../context/UserContext";
 import { PostData } from "../context/PostContext";
-import toast from "react-hot-toast";
-import {
-  FaFacebookF,
-  FaInstagram,
-  FaTwitter,
-  FaLinkedin,
-} from "react-icons/fa";
+
+// ✅ NEW: procedural floating system
+import FloatingIcons from "../components/FloatingIcons";
 
 /* =========================================================
-   REGISTER — 3D GLASS / REACT-BITS STYLE
+   REGISTER — CLEAN, DYNAMIC, GPU-SAFE
 ========================================================= */
 const Register = () => {
   const navigate = useNavigate();
@@ -45,18 +43,12 @@ const Register = () => {
      =============================== */
   const passwordStrength = useMemo(() => {
     if (!password) return { label: "", color: "" };
-
     const hasNumber = /\d/.test(password);
     const hasSymbol = /[!@#$%^&*]/.test(password);
 
-    if (password.length < 7) {
-      return { label: "Weak", color: "bg-red-500" };
-    }
-
-    if (password.length >= 7 && hasNumber && hasSymbol) {
+    if (password.length < 7) return { label: "Weak", color: "bg-red-500" };
+    if (password.length >= 7 && hasNumber && hasSymbol)
       return { label: "Strong", color: "bg-green-500" };
-    }
-
     return { label: "Medium", color: "bg-yellow-500" };
   }, [password]);
 
@@ -105,15 +97,8 @@ const Register = () => {
   return (
     <div className="page">
       <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <div className="parallax" />
-
-        {/* Floating Icons */}
-        <div className="floating-icons pointer-events-none">
-          <FaFacebookF className="floating-icon text-blue-500 text-5xl" style={{ left: "12%", animationDelay: "0s" }} />
-          <FaInstagram className="floating-icon text-pink-500 text-5xl" style={{ left: "32%", animationDelay: "5s" }} />
-          <FaTwitter className="floating-icon text-sky-400 text-5xl" style={{ left: "62%", animationDelay: "10s" }} />
-          <FaLinkedin className="floating-icon text-blue-400 text-5xl" style={{ left: "82%", animationDelay: "15s" }} />
-        </div>
+        {/* 🌌 Dynamic floating icons (REPLACED hardcoded mess) */}
+        <FloatingIcons count={14} />
 
         {/* Card */}
         <motion.div
@@ -145,7 +130,6 @@ const Register = () => {
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Username" className="custom-input" required />
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="custom-input" required />
 
-            {/* Password */}
             <input
               type="password"
               value={password}
@@ -155,11 +139,10 @@ const Register = () => {
               required
             />
 
-            {/* Strength Meter */}
             {password && (
               <div className="space-y-1">
                 <div className="h-2 w-full bg-gray-700 rounded overflow-hidden">
-                  <div className={`h-full ${passwordStrength.color} transition-all`} style={{ width: "100%" }} />
+                  <div className={`h-full ${passwordStrength.color} transition-all`} />
                 </div>
                 <p className="text-xs text-gray-400">
                   Strength: <span className="font-semibold">{passwordStrength.label}</span>

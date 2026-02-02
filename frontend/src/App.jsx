@@ -9,6 +9,7 @@ import UserAccount from "./pages/UserAccount";
 import Reels from "./pages/Reels";
 import Search from "./pages/Search";
 import ChatPage from "./pages/ChatPage";
+import Developer from "./pages/Developer"; // ✅ NEW (isolated addition)
 
 import NavigationBar from "./components/NavigationBar";
 import NotFound from "./components/NotFound";
@@ -22,21 +23,24 @@ import SceneBackground from "./ui/SceneBackground";
 const App = () => {
   const { loading, isAuth, user } = UserData();
 
+  // 🔒 Global loading gate (unchanged)
   if (loading) {
     return <Loading />;
   }
 
   return (
     <>
-      {/* 🔹 Global background layer (Canvas / 3D / effects) */}
+      {/* 🔹 Global visual layer (independent of routing/auth) */}
       <SceneBackground />
 
       {/* 🔹 Application routing layer */}
       <BrowserRouter>
         <Routes>
+          {/* Core routes */}
           <Route path="/" element={isAuth ? <Home /> : <Login />} />
           <Route path="/reels" element={isAuth ? <Reels /> : <Login />} />
 
+          {/* Account routes */}
           <Route
             path="/account"
             element={isAuth ? <Account user={user} /> : <Login />}
@@ -47,24 +51,28 @@ const App = () => {
             element={isAuth ? <UserAccount user={user} /> : <Login />}
           />
 
+          {/* Auth routes */}
           <Route path="/login" element={!isAuth ? <Login /> : <Home />} />
-
           <Route
             path="/register"
             element={!isAuth ? <Register /> : <Home />}
           />
 
+          {/* Feature routes */}
           <Route path="/search" element={isAuth ? <Search /> : <Login />} />
-
           <Route
             path="/chat"
             element={isAuth ? <ChatPage user={user} /> : <Login />}
           />
 
+          {/* ✅ Developer route (explicitly non-auth-gated) */}
+          <Route path="/developer" element={<Developer />} />
+
+          {/* Fallback */}
           <Route path="*" element={<NotFound />} />
         </Routes>
 
-        {/* 🔹 Persistent navigation (auth-gated) */}
+        {/* 🔹 Persistent navigation (auth-gated, unchanged) */}
         {isAuth && <NavigationBar />}
       </BrowserRouter>
     </>
