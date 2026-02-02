@@ -36,10 +36,14 @@ app.use(cookieParser());
 // ✅ CORS (FRONTEND ↔ BACKEND)
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://mern-social-4-ufh7.onrender.com"
+    ],
     credentials: true,
   })
 );
+
 
 /* ======================================================
    ☁️ CLOUDINARY CONFIG
@@ -109,22 +113,23 @@ app.get("/api/user/all", isAuth, async (req, res) => {
 
 const __dirname = path.resolve();
 
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "frontend/dist")));
+// Serve static assets
+app.use(express.static(path.join(__dirname, "frontend/dist")));
 
-  app.get("*", (req, res) => {
-    res.sendFile(
-      path.join(__dirname, "frontend", "dist", "index.html")
-    );
-  });
-}
+// SPA fallback — MUST be last
+app.get("*", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "frontend", "dist", "index.html")
+  );
+});
+
 
 /* ======================================================
    ♻️ RENDER KEEP-ALIVE
 ====================================================== */
 
 if (process.env.NODE_ENV === "production") {
-  const url = "https://mern-social-3e3m.onrender.com";
+const url = process.env.RENDER_EXTERNAL_URL;
   const interval = 30000;
 
   setInterval(() => {
