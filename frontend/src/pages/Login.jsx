@@ -3,13 +3,16 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import toast from "react-hot-toast";
 import { Eye, EyeOff, ShieldCheck, ShieldAlert } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
+import axios from "axios";
 
 import { UserData } from "../context/UserContext";
 import FloatingIcons from "../components/FloatingIcons";
 
 /* =========================================================
-   LOGIN — CLEAN + GLASS + FLOATING ICONS
+   LOGIN — FULL VERSION WITH GOOGLE AUTH (NON-DESTRUCTIVE)
 ========================================================= */
+
 const Login = () => {
   const navigate = useNavigate();
   const { loginUser, loading } = UserData();
@@ -67,7 +70,7 @@ const Login = () => {
   };
 
   /* ===============================
-     SUBMIT
+     EMAIL/PASSWORD SUBMIT
      =============================== */
   const submitHandler = (e) => {
     e.preventDefault();
@@ -83,16 +86,35 @@ const Login = () => {
       localStorage.removeItem("remember_email");
     }
 
-    console.info("[AUTH_TELEMETRY]", {
-      event: "login_attempt",
-      strength,
-      rememberMe,
-      timestamp: Date.now(),
-    });
-
     loginUser(email, password, navigate);
   };
 
+  /* ===============================
+     GOOGLE AUTH HANDLER
+     =============================== */
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/google",
+        {
+          credential: credentialResponse.credential,
+        }
+      );
+
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+
+      toast.success("Signed in with Google");
+      navigate("/");
+    } catch (error) {
+      console.error("Google Login Failed:", error);
+      toast.error("Google login failed");
+    }
+  };
+
+  /* ===============================
+     LOADING STATE
+     =============================== */
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-400">
@@ -106,11 +128,10 @@ const Login = () => {
      =============================== */
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#0b0616] via-[#140b2d] to-[#090514]">
-      
-      {/* 🌌 FLOATING ICONS BACKGROUND */}
+
+      {/* 🌌 FLOATING ICONS */}
       <FloatingIcons count={14} />
 
-      {/* AUTH LAYER */}
       <div className="relative z-10 min-h-screen flex items-center justify-center px-6">
         <motion.div
           className="relative glass glass-hover w-full max-w-md p-8 transform-gpu"
@@ -125,6 +146,9 @@ const Login = () => {
             Secure access to your account
           </p>
 
+          {/* ===============================
+              EMAIL / PASSWORD FORM
+             =============================== */}
           <form onSubmit={submitHandler} className="space-y-4">
             <input
               type="email"
@@ -135,7 +159,6 @@ const Login = () => {
               required
             />
 
-            {/* PASSWORD */}
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -155,14 +178,12 @@ const Login = () => {
               </button>
             </div>
 
-            {/* CAPS LOCK */}
             {capsLock && (
               <div className="text-sm text-yellow-400">
                 ⚠️ Caps Lock is ON
               </div>
             )}
 
-            {/* PASSWORD STRENGTH */}
             {password && (
               <div className="flex items-center gap-2 text-sm">
                 <div className="flex-1 h-2 rounded bg-gray-700 overflow-hidden">
@@ -178,7 +199,6 @@ const Login = () => {
               </div>
             )}
 
-            {/* REMEMBER ME */}
             <label className="flex items-center gap-2 text-sm text-gray-400">
               <input
                 type="checkbox"
@@ -196,6 +216,25 @@ const Login = () => {
               Login
             </motion.button>
           </form>
+
+          {/* ===============================
+              GOOGLE LOGIN (ADDITIVE)
+             =============================== */}
+          <div className="mt-6">
+            <div className="text-center text-sm text-gray-400 mb-2">
+              or continue with
+            </div>
+
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => toast.error("Google login failed")}
+                theme="filled_black"
+                size="large"
+                shape="pill"
+              />
+            </div>
+          </div>
 
           {/* DEV PORTFOLIO */}
           <button

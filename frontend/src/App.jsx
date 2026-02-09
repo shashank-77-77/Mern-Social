@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -37,8 +38,21 @@ const App = () => {
   return (
     <>
       {/* ==================================================
+          GLOBAL TOAST LAYER (CRITICAL)
+      ================================================== */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: "#111",
+            color: "#fff",
+          },
+        }}
+      />
+
+      {/* ==================================================
           GLOBAL VISUAL LAYER
-          (independent of routing & auth)
       ================================================== */}
       <SceneBackground />
 
@@ -92,13 +106,8 @@ const App = () => {
           />
 
           {/* ================= DEVELOPER / PORTFOLIO ======== */}
-          {/* Canonical route */}
-          {/* <Route path="/developer" element={<Developer />} /> */}
-
-          {/* SEO + UX alias */}
           <Route path="/portfolio" element={<Developer />} />
 
-          {/* Legacy deep-link normalization */}
           <Route
             path="/portfolio/index.html"
             element={<Navigate to="/portfolio" replace />}
@@ -110,7 +119,6 @@ const App = () => {
 
         {/* ==================================================
             PERSISTENT NAVIGATION
-            (auth-gated, rendered after routes)
         ================================================== */}
         {isAuth && <NavigationBar />}
       </BrowserRouter>

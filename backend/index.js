@@ -58,6 +58,8 @@ cloudinary.v2.config({
    🚀 ROUTES (AFTER MIDDLEWARES)
 ====================================================== */
 
+// google
+app.use("/api/auth", authRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/post", postRoutes);
