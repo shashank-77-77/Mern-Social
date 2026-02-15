@@ -120,3 +120,13 @@ Security Considerations
 - Protect environment files
 - Rotate API keys periodically
 - Enable proper CORS policies
+Scalability Roadmap
+- Redis for caching
+- Kubernetes orchestration
+- Horizontal AI service scaling
+- Rate limiting middleware
+- Observability (Prometheus + Grafana)
+Author
+Shashank Mankar
+Full-Stack Developer
+Cloud & Microservice Enthusiast
